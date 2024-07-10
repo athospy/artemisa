@@ -25,7 +25,7 @@ SECRET_KEY = "REDACTED"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['artemisa.lajota.com.py', 'localhost']
 
 
 # Application definition
@@ -75,9 +75,13 @@ WSGI_APPLICATION = "capstone.wsgi.application"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'artemisa',
+        'USER': 'artemisa',
+        'PASSWORD': 'REDACTED',
+        'HOST': 'localhost',
+        'PORT': '',
     }
 }
 
@@ -124,4 +128,7 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # for form submision through codespaces
-CSRF_TRUSTED_ORIGINS = [ 'https://localhost:8000', 'https://automatic-system-vw6grpp649fxrxj-8000.app.github.dev']
+CSRF_TRUSTED_ORIGINS = [ 'https://localhost:8000', 'http://artemisa.lajota.com.py']
+
+import os
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
