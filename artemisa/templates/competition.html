@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %} Artemisa - {{competition.code}}  {% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <div class="container">
+        <p class="display-4">{{competition.name}}</p>
+        <div>
+            <h1 class="mb-4">code: {{ competition.code }}</h1>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <i class="bi bi-calendar-event-fill"></i>
+                    <strong>Event Date:</strong> {{ competition.event_date }}
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    <strong>Location:</strong> {{ competition.location }}
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>Description:</strong> {{ competition.description }}
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+<div class="container">
+    <div class='row'>
+        <div class='col-lg-4 col-sm-12 d-flex justify-content-center align-items-center' style='padding: 4%'>
+            <a href="{% url 'compete' competition_id=competition.id %}">
+                <button type="button" class="btn btn-primary btn-lg">Start competition</button>
+            </a>
+        </div>
+        <div class='col-lg-4 col-sm-12 d-flex justify-content-center align-items-center' style='padding: 4%'>
+            <a href="{% url 'shoot_timer' competition_id=competition.id %}">
+                <button type="button" class="btn btn-primary btn-lg">Shoot timer</button>
+            </a>
+        </div>
+        <div class='col-lg-4 col-sm-12 d-flex justify-content-center align-items-center' style='padding: 4%'>
+            <a href="{% url 'result_screen' competition_id=competition.id %}">
+                <button type="button" class="btn btn-primary btn-lg">Scores screen</button>
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %} Artemisa - {{competition.code}} results  {% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <div class="container">
+        <p class="display-4 text-center">Results</p>
+        <p>
+            <select id='select_category' class="large-select">
+                <option disabled selected>Select category</option>
+                {% for category in categories %}
+                    <option value="{{category.id}}">{{category.name}}</option>
+                {% endfor %}
+            </select>
+        </p>
+    </div>
+</div>
+
+
+<div class="container mb-5" id="result_container">
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'artemisa/results.js' %}"></script>
+{% endblock %}

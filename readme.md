@@ -1,0 +1,117 @@
+# Artemisa - Archery Tournament Scoring System
+
+Artemisa is a sophisticated and user-friendly scoring system designed specifically for archery tournaments. This project was born out of a necessity to streamline and modernize the way archery competitions are managed, scored, and displayed. Traditional methods of scoring and timekeeping in archery can be cumbersome, error-prone, and lacking in real-time visibility. Artemisa addresses these challenges by offering an integrated solution that not only simplifies the process but also enhances the experience for archers, judges, and spectators alike.
+
+## Project Overview
+
+Artemisa stands out due to its comprehensive feature set and thoughtful design. Unlike other generic scoring systems, Artemisa is tailored for archery, taking into account the unique requirements of this sport. From managing participants and categories to handling real-time scoring and displaying results on large screens, every aspect of the tournament is covered. The system ensures accuracy, efficiency, and transparency, which are crucial for maintaining the integrity and excitement of the competition.
+
+The development of Artemisa was driven by the need to eliminate manual errors and to provide a seamless experience for all stakeholders. The complexity of this project lies in its multifaceted approach to solving the various logistical problems associated with archery tournaments. The project required a deep understanding of both the sport and the technological solutions that could enhance it. This included developing a robust backend to handle data management, a responsive frontend for user interaction, and real-time capabilities for scoring and timekeeping.
+
+## Distinctiveness and Complexity
+
+Artemisa distinguishes itself from other projects in several key ways:
+
+1. **Domain-Specific Design**: Unlike general-purpose scoring systems, Artemisa is designed specifically for archery. This focus allowed us to incorporate features that are particularly relevant to archery tournaments, such as category-specific scoring with data validation, timed phases for preparation and competition, and specialized result displays that changes automatically.
+
+2. **Real-Time Functionality**: Implementing real-time scoring and timekeeping was a significant technical challenge. The system had update scores instantly, and keep looping trough the catetories indefinely;
+
+3. **User Experience**: A major goal of Artemisa was to create an intuitive and user-friendly interface. This required extensive frontend development and user testing to ensure that the system could be used easily by archers, judges, and spectators of all technological proficiencies.
+
+4. **Scalability and Reliability**: The system was designed to handle large-scale tournaments with potentially hundreds of participants. Ensuring that the system remained responsive and reliable under heavy load was a key consideration using mostly javacript that runs on the client for the procesing information and make calculations.
+
+## Features
+
+- **Simple Management**: Easily add, update, and manage archers, categories and competitions in the tournament using Django administration features.
+- **Registration Management**: Register archers for specific categories within a competition.
+- **Scoring System**: Record and track the score of each archer after every round, with scores grouped by categories for easy tracking.
+- **Shoot Timer**: with sound cues in each phase and a 10 second warning sound for the competition phase time.
+  - **Preparation Phase**: 10 seconds for archers to prepare before the competition begins.
+  - **Competition Phase**: 3 minutes for each round of shooting.
+- **Result Display**: Show current standings and scores of all archers in each category on a large screen, allowing everyone to see the competition's progress and current leaders.
+
+## Important Files
+
+Here is an overview of the key files and their roles within the Artemisa project:
+
+- **layout.html**: Located in the `templates` folder, this file uses Bootstrap for styling and provides a simple, intuitive navbar. It includes blocks for the main content in the body section and necessary JavaScript files in the head section to ensure a cohesive and responsive design across all pages.
+
+- **competition.html**: Found in the `templates` folder, this is the central hub of the project. From this page, you can navigate to the different components of the system: the scoreboard, the shoot timer, and the results screen. It serves as the main entry point for managing and viewing the competition details.
+
+- **compete.html and compete.js**:
+  - **compete.html**: This template is responsible for the scoreboard functionality. It allows you to select the competing category and the archers within that category. You can add scores for each end, and the system automatically accumulates these scores, keeping track of the total for each archer. There is also a button to select the current archer who is shooting, enabling score entry for each individual.
+  - **compete.js**: Located in the `static` folder, this JavaScript file supports the functionality of the `compete.html` template, handling the dynamic aspects of score tracking and archer management.
+
+- **shoot_timer.html and shoot_timer.js**:
+  - **shoot_timer.html**: This template displays the timer for each phase of the competition. It visually represents the preparation and competition phases, providing a clear and structured countdown for participants.
+  - **shoot_timer.js**: Also located in the `static` folder, this script manages the timer's functionality, including playing sounds for each event to alert participants visually and audibly to the current phase.
+
+- **result_screen.html and results.js**:
+  - **result_screen.html**: This template displays the competition results, ordering them in descending order based on the scores for each category. It provides a clear and concise view of the current standings.
+  - **results.js**: Found in the `static` folder, this script enables the automatic looping of results every 3 seconds, cycling through the categories to ensure that the latest standings are continuously visible.
+
+
+## Installation
+
+1. Create the migrations:
+
+    ```bash
+    python manage.py makemigrations
+    ```
+
+2. Create the tables:
+
+    ```bash
+    python manage.py migrate
+    ```
+
+3. Create a superuser to access the admin interface:
+
+    ```bash
+    python manage.py createsuperuser
+    ```
+
+4. Run the development server:
+
+    ```bash
+    python manage.py runserver
+    ```
+
+5. Open your web browser and go to `http://127.0.0.1:8000/` to access Artemisa.
+
+## Usage
+
+### Archer Management
+
+- Navigate to the Archer Management section to add, update, or delete archers.
+
+### Category Management
+
+- Define and manage different categories for the tournament in the Category Management section.
+
+### Competition Management
+
+- Create and manage competitions, and register archers for specific categories.
+
+### Scoring System
+
+- Select a competition and navigate to the scoring section.
+- Record the score of each archer after every round.
+- Scores are grouped by categories for easy tracking.
+
+### Shoot Timer
+
+- Use the shoot timer to manage the phases of the competition:
+  - **Preparation Phase**: 10 seconds for preparation.
+  - **Competition Phase**: 3 minutes for each round of shooting.
+
+### Result Display
+
+- Navigate to the result screen to display current standings and scores on a large screen.
+- This allows everyone to see the competition progress and know who is leading in each category.
+- It automatically change category each 3 seconds.
+
+---
+
+Artemisa is not just a tool; it's a step towards modernizing and enhancing the experience of archery tournaments. By addressing the specific needs of archery competitions and providing a robust, real-time solution, Artemisa aims to set a new standard in sports scoring systems. Whether you're an archer, a judge, or a spectator, Artemisa ensures that the tournament runs smoothly, scores are accurately recorded, and results are transparently displayed. I am proud of the complexity and the thoughtful design that went into Artemisa and believe it stands out as a distinctive and impactful project in the realm of sports technology.
+# artemisa

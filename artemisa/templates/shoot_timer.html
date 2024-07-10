@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %} Artemisa - {{competition.code}} timer  {% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <div class="container">
+        <p class="display-4 text-center">Shoot timer</p>
+    </div>
+</div>
+
+
+<div class="container-fluid mb-5" >
+    <div class="row justify-content-md-center">
+        <div id="clock" class="col-12 clock text-center" style="display: none"></div>
+        <button type="button" class="btn btn-success btn-lg m-5" id="start_button">Start</button>
+    </div>
+    <div class="row justify-content-md-center">
+        <button style="display: none" id="stop_button" type="button" class="btn btn-danger btn-lg m-5">Stop</button>
+    </div>
+    <audio id="beep_audio">
+        <source src="{% static 'artemisa/whistle.wav' %}" type="audio/wav">
+        Your browser does not support the audio tag.
+    </audio>
+    <audio id="warning_audio">
+        <source src="{% static 'artemisa/warning.mp3' %}" type="audio/mp3">
+        Your browser does not support the audio tag.
+    </audio>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'artemisa/shoot_timer.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %} Artemisa - {{competition.code}}  {% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <div class="container">
+        <p class="display-4 text-center">Scoreboard</p>
+        <p>
+            <select id='select_category'>
+                <option disabled selected>Select category</option>
+                {% for category in categories %}
+                    <option value="{{category.id}}">{{category.name}}</option>
+                {% endfor %}
+            </select>
+        </p>
+        <p>
+            {% for category, archers in categories_with_archers %}
+                {% if archers %}
+                    <div id="category_{{category.id}}" style="display: none" class="categories_dropdown">
+                        <h4>{{category.name}}</h4>
+                        <select multiple='true'>
+                            {% for archer in archers %}
+                                <option value="{{archer.id}}">{{archer.name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+</div>
+
+
+<div class="container-fluid">
+    <div class="row justify-content-center mt-3" id="archer_button_picker"></div>
+    <div id="archers_container"></div>
+</div>
+
+<div id="archers_map" data-archers="{{archer_map}}"></div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'artemisa/compete.js' %}"></script>
+{% endblock %}

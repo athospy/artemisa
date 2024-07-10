@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %} Artemisa - Competitions {% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <div class="container">
+        <p class="display-4">Competitions</p>
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="list-group">
+        {% for competition in competitions %}
+            <a href="{% url 'select_competition' competition_id=competition.id %}" class="list-group-item list-group-item-action">{{competition.name}}</a>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
