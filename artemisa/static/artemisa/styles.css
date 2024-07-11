@@ -1,7 +1,7 @@
 
 
 @media (max-width: 600px) {
-    .input-row .col {
+    .input-row .score_input {
         padding-left: 2px;
         padding-right: 2px;
     }

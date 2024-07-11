@@ -1,25 +1,25 @@
 <div id="archer_{{archer.id}}" style="display: none" class="archer_container_div">
     <h4>{{archer.name}}</h4>
     <h4>{{archer.club_name}}</h4>
-    <div style="border: solid 1px;padding: 1%">
+    <div style="border: solid 1px;padding: 4%">
         <div id="archer_{{archer.id}}_scores_div">
         </div>
 
         <hr style="margin-bottom: 2%">
 
         <div class="row" style="padding-bottom: 1%">
-            <div class="col-8 col-lg-9"></div>
-            <div class="col" style="text-align: center">
+            <div class="col-6 col-lg-9" style="text-align: center"></div>
+            <div class="col-2 col-lg" style="text-align: center">
                 <div>
                     Total
                 </div>
             </div>
-            <div class="col" style="text-align: center">
+            <div class="col-2 col-lg" style="text-align: center">
                 <div>
                     10s
                 </div>
             </div>
-            <div class="col" style="text-align: center">
+            <div class="col-2 col-lg" style="text-align: center">
                 <div>
                     Xs
                 </div>
@@ -27,17 +27,17 @@
         </div>
 
 
-        <div class="row g-3">
-            <div class="col-8 col-lg-9" style="text-align: center">
+        <div class="row g-3 input-row">
+            <div class="col-6 col-lg-9" style="text-align: center">
                 ---
             </div>
-            <div class="col">
+            <div class="col-2 col-lg score_input">
                 <input type="text" class="form-control" style="text-align: center" placeholder="Total" id="archer_{{archer.id}}_final_total" disabled="disabled" aria-label="total">
             </div>
-            <div class="col">
+            <div class="col-2 col-lg score_input">
                 <input type="text" class="form-control" style="text-align: center" placeholder="10s" id="archer_{{archer.id}}_final_10s" disabled="disabled" aria-label="10s">
             </div>
-            <div class="col">
+            <div class="col-2 col-lg score_input">
                 <input type="text" class="form-control" style="text-align: center" placeholder="Xs" id="archer_{{archer.id}}_final_xs" disabled="disabled" aria-label="Xs">
             </div>
         </div>

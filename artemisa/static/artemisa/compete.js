@@ -106,7 +106,10 @@ function add_score_div(archer_id, end_number) {
         );
         // add the listener for the recent html added
         const divs = document.querySelectorAll(`#archer_${archer_id} .shoot_input`);
-        divs.forEach(el => el.addEventListener('blur', add_score));
+        divs.forEach(el => el.addEventListener('change', add_score));
+        const end_button = document.querySelector(`#archer_${archer_id}_end_${end_number}_button`);
+        end_button.addEventListener('click', add_shoot_end);
+        init_virtual_keyboard();
     })
     .catch(error => {
         console.log(error)
@@ -117,14 +120,13 @@ function add_score_div(archer_id, end_number) {
 // loop through each input every time for preventing error when editing scores
 // transforming de 'X' to 10 and the 'M' to 0 for the scoring
 function add_score(event) {
-    let score = event.target.value.toUpperCase()
-    if (!is_score_valid(score)) {
-        alert(`Invalid score ${score}`);
-        event.target.value = null;
-        return;
-    }
+    // let score = event.target.value.toUpperCase()
+    // if (!is_score_valid(score)) {
+    //     alert(`Invalid score ${score}`);
+    //     event.target.value = null;
+    //     return;
+    // }
     const end_number = event.target.dataset.end;
-    const shoot_number = event.target.dataset.shoot;
     const archer_id = event.target.dataset.archer_id;
     init_zero_end(end_number, archer_id);
     const shoots_scores = document.querySelectorAll(`#archer_${archer_id} .shoot_input`);
@@ -142,33 +144,43 @@ function add_score(event) {
     // if all the inpunt has value proceed to the next end if there is one
     // after 6 ends the first roung is over and after 12 ends the tournament is over
     if (all_scores_input_filled) {
-        const userConfirmed = confirm("Are you sure you want to proceed?");
-        // Check the user's response
-        if (!userConfirmed) {
-            return;
-        }
-        save_score_db(shoot_array, archer_id, end_number);
-        shoots_scores.forEach(el => {
-            el.disabled = "disabled";
-            el.classList.remove("shoot_input");
-        });
-        sum_end_totals(end_number, archer_id);
-        if (parseInt(end_number) == 6) {
-            document.querySelector(`#archer_${archer_id}_scores_div`).insertAdjacentHTML(
-                'beforeend',
-                '<hr><hr><div>End of round 1</div><hr><hr>'
-            );
-        }
-        if (parseInt(end_number) == 12) {
-            document.querySelector(`#archer_${archer_id}_scores_div`).insertAdjacentHTML(
-                'beforeend',
-                '<hr><hr><div>End of round 2</div><hr><hr>'
-            );
-        }
-        else {
-            add_score_div(archer_id, parseInt(end_number)+1);
-        }
+        // show next end button
+        const end_button = document.querySelector(`#archer_${archer_id}_end_${end_number}_button`);
+        end_button.style.display = 'block';
     }
+}
+
+function add_shoot_end(event) {
+    const end_number = event.target.dataset.end;
+    const archer_id = event.target.dataset.archer_id;
+    const shoots_scores = document.querySelectorAll(`#archer_${archer_id} .shoot_input`);
+    let shoot_array = [];
+    shoots_scores.forEach(el => {
+        let score = el.value.toUpperCase() || 0;
+        shoot_array.push(score);
+    });
+    save_score_db(shoot_array, archer_id, end_number);
+    shoots_scores.forEach(el => {
+        el.disabled = "disabled";
+        el.classList.remove("shoot_input");
+    });
+    sum_end_totals(end_number, archer_id);
+    if (parseInt(end_number) == 6) {
+        document.querySelector(`#archer_${archer_id}_scores_div`).insertAdjacentHTML(
+            'beforeend',
+            '<hr><hr><div>End of round 1</div><hr><hr>'
+        );
+    }
+    if (parseInt(end_number) == 12) {
+        document.querySelector(`#archer_${archer_id}_scores_div`).insertAdjacentHTML(
+            'beforeend',
+            '<hr><hr><div>End of round 2</div><hr><hr>'
+        );
+    }
+    else {
+        add_score_div(archer_id, parseInt(end_number)+1);
+    }
+    event.target.style.display = 'none';
 }
 
 // after the 'end' if complete save the score in the database
@@ -292,4 +304,99 @@ function sum_final_xs(score, archer_id) {
     const final_x_div = document.querySelector(`#archer_${archer_id}_final_xs`);
     const final_xs_value = parseInt(final_x_div.value) || 0;
     final_x_div.value = final_xs_value + score;
+}
+
+function init_virtual_keyboard() {
+
+    KioskBoard.init({
+        /*!
+         * Required
+         * An Array of Objects has to be defined for the custom keys.
+         * Hint: Each object creates a row element (HTML) on the keyboard.
+         * e.g. [{"key":"value"}, {"key":"value"}] => [{"0":"A","1":"B","2":"C"}, {"0":"D","1":"E","2":"F"}]
+         */
+        keysArrayOfObjects: [{"6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "X": "X"}, {"M": "M", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5"}],
+    
+        /*!
+         * Required only if "keysArrayOfObjects" is "null".
+         * The path of the "kioskboard-keys-${language}.json" file must be set to the "keysJsonUrl" option. (XMLHttpRequest to get the keys from JSON file.)
+         * e.g. '/Content/Plugins/KioskBoard/dist/kioskboard-keys-english.json'
+         */
+        keysJsonUrl: null,
+    
+        /* 
+         * Optional: (Special Characters)
+         * An Array of Strings can be set to override the built-in special characters.
+         * e.g. ["#", "€", "%", "+", "-", "*"]
+         */
+        keysSpecialCharsArrayOfStrings: null,
+    
+        /* 
+         * Optional: (Numpad Keys)
+         * An Array of Numbers can be set to override the built-in numpad keys. (From 0 to 9, in any order.)
+         * e.g. [1, 2, 3, 4, 5, 6, 10, 9, 9, 0]
+         */
+        keysNumpadArrayOfNumbers: null,
+    
+        // Optional: (Other Options)
+        // Language Code (ISO 639-1) for custom keys (for language support) => e.g. "de" || "en" || "fr" || "hu" || "tr" etc...
+        language: 'en',
+    
+        // The theme of keyboard => "light" || "dark" || "flat" || "material" || "oldschool"
+        theme: 'light',
+    
+        // Scrolls the document to the top or bottom(by the placement option) of the input/textarea element. Prevented when "false"
+        autoScroll: true,
+    
+        // Uppercase or lowercase to start. Uppercased when "true"
+        capsLockActive: true,
+    
+        // Allow or prevent real/physical keyboard usage. Prevented when "false"
+        // In addition, the "allowMobileKeyboard" option must be "true" as well, if the real/physical keyboard has wanted to be used.
+        allowRealKeyboard: false,
+    
+        // Allow or prevent mobile keyboard usage. Prevented when "false"
+        allowMobileKeyboard: false,
+    
+        // CSS animations for opening or closing the keyboard
+        cssAnimations: true,
+    
+        // CSS animations duration as millisecond
+        cssAnimationsDuration: 360,
+    
+        // CSS animations style for opening or closing the keyboard => "slide" || "fade"
+        cssAnimationsStyle: 'slide',
+    
+        // Enable or Disable Spacebar functionality on the keyboard. The Spacebar will be passive when "false"
+        keysAllowSpacebar: false,
+    
+        // Text of the Space key (Spacebar). Without text => " "
+        keysSpacebarText: 'Space',
+    
+        // Font family of the keys
+        keysFontFamily: 'sans-serif',
+    
+        // Font size of the keys
+        keysFontSize: '25px',
+    
+        // Font weight of the keys
+        keysFontWeight: 'normal',
+    
+        // Size of the icon keys
+        keysIconSize: '25px',
+    
+        // Text of the Enter key (Enter/Return). Without text => " "
+        keysEnterText: 'Enter',
+    
+        // The callback function of the Enter key. This function will be called when the enter key has been clicked.
+        keysEnterCallback: undefined,
+    
+        // The Enter key can close and remove the keyboard. Prevented when "false"
+        keysEnterCanClose: false,
+    });
+    
+
+    KioskBoard.run('.js-kioskboard-input', { 
+
+    });
 }
