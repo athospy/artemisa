@@ -110,6 +110,7 @@ function add_score_div(archer_id, end_number) {
         const end_button = document.querySelector(`#archer_${archer_id}_end_${end_number}_button`);
         end_button.addEventListener('click', add_shoot_end);
         init_virtual_keyboard();
+        highlight_inputs_focus();
     })
     .catch(error => {
         console.log(error)
@@ -128,11 +129,12 @@ function add_score(event) {
     // }
     const end_number = event.target.dataset.end;
     const archer_id = event.target.dataset.archer_id;
+    const shoot_number = event.target.dataset.shoot;
     init_zero_end(end_number, archer_id);
     const shoots_scores = document.querySelectorAll(`#archer_${archer_id} .shoot_input`);
     let all_scores_input_filled = true;
     let shoot_array = [];
-    shoots_scores.forEach(el => {
+    shoots_scores.forEach((el, index) => {
         if (is_empty(el.value)) {
             all_scores_input_filled = false;
         }
@@ -148,6 +150,12 @@ function add_score(event) {
         const end_button = document.querySelector(`#archer_${archer_id}_end_${end_number}_button`);
         end_button.style.display = 'block';
     }
+    else {
+        event.target.classList.remove('highlighted');
+        // focus on the next input
+        document.querySelector(`#archer_${archer_id}_end_${end_number}_shoot_${parseInt(shoot_number)+1}`).click();
+    }
+
 }
 
 function add_shoot_end(event) {
@@ -163,6 +171,7 @@ function add_shoot_end(event) {
     shoots_scores.forEach(el => {
         el.disabled = "disabled";
         el.classList.remove("shoot_input");
+        el.classList.remove('highlighted');
     });
     sum_end_totals(end_number, archer_id);
     if (parseInt(end_number) == 6) {
@@ -362,10 +371,10 @@ function init_virtual_keyboard() {
         cssAnimations: true,
     
         // CSS animations duration as millisecond
-        cssAnimationsDuration: 360,
+        cssAnimationsDuration: 90,
     
         // CSS animations style for opening or closing the keyboard => "slide" || "fade"
-        cssAnimationsStyle: 'slide',
+        cssAnimationsStyle: 'fade',
     
         // Enable or Disable Spacebar functionality on the keyboard. The Spacebar will be passive when "false"
         keysAllowSpacebar: false,
@@ -397,6 +406,21 @@ function init_virtual_keyboard() {
     
 
     KioskBoard.run('.js-kioskboard-input', { 
+
+    });
+}
+
+function highlight_inputs_focus() {
+    const inputs = document.querySelectorAll('.js-kioskboard-input');
+
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            input.classList.add('highlighted');
+        });
+
+        input.addEventListener('blur', function() {
+            input.classList.remove('highlighted');
+        });
 
     });
 }
