@@ -16,7 +16,7 @@ async function start_preparing_timer() {
 
 async function start_competition_timer() {
     await beep();
-    countdown('clock', 0, 15);
+    countdown('clock', 3, 0);
 }
 
 async function finish_timer() {
