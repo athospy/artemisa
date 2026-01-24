@@ -72,6 +72,10 @@ jobs:
           # Django maintenance
           python manage.py migrate --noinput
           python manage.py collectstatic --noinput
+          
+          # Fix permissions for www-data to serve static files
+          chown -R www-data:www-data static/ media/
+          chmod -R u+rw static/ media/
 
           # Restart services (configure secrets with correct names)
           systemctl restart ${{ secrets.PROD_GUNICORN_SERVICE || 'artemisa_gunicorn' }} || true
