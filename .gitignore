@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Environments
+venv/
+.venv/
+aremisaenv/
+
+# Django
+*.log
+media/
+staticfiles/
+db.sqlite3
+
+# Env and secrets
+.env
+*.env
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+
+# Dumps and archives
+*.tar
+*.gz
+*.zip
+dump-*.sql
+dump-artemisa-*.tar
