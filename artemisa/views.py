@@ -1,22 +1,49 @@
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
 import json
 from collections import defaultdict
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required, permission_required
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import IntegrityError
 from django.http import JsonResponse
+from django.db.models import Sum, Case, When, Value, IntegerField, OuterRef, Subquery, F
+from django.db.models.functions import Coalesce, Cast
+from django.contrib.auth import login
 
 from .models import Competition
 from .models import Registration
 from .models import Category
 from .models import Archer
 from .models import Score
+from .forms import RegisterForm, CompetitionForm, CategoryForm, ArcherForm, RegistrationForm
 
+@ensure_csrf_cookie
 def index(request):
-    return render(request, "home.html",{})
+    from .models import Competition, Archer, Registration, Score
+    stats = {
+        'competitions_count': Competition.objects.count(),
+        'archers_count': Archer.objects.count(),
+        'registrations_count': Registration.objects.count(),
+        'scores_count': Score.objects.count(),
+    }
+    return render(request, "home.html", stats)
 
 
+def register(request):
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('competitions')
+    else:
+        form = RegisterForm()
+    return render(request, 'registration/register.html', {'form': form})
+
+
+@login_required
+@ensure_csrf_cookie
 def competitions(request):
     competitions = Competition.objects.all()
     return render(request, "competitions.html",{
@@ -24,6 +51,60 @@ def competitions(request):
     })
 
 
+@login_required
+@ensure_csrf_cookie
+def add_competition(request):
+    if request.method == 'POST':
+        form = CompetitionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('competitions')
+    else:
+        form = CompetitionForm()
+    return render(request, 'add_competition.html', {'form': form})
+
+
+@login_required
+@ensure_csrf_cookie
+def add_category(request):
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('competitions')
+    else:
+        form = CategoryForm()
+    return render(request, 'add_category.html', {'form': form})
+
+
+@login_required
+@ensure_csrf_cookie
+def add_archer(request):
+    if request.method == 'POST':
+        form = ArcherForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('competitions')
+    else:
+        form = ArcherForm()
+    return render(request, 'add_archer.html', {'form': form})
+
+
+@login_required
+@ensure_csrf_cookie
+def add_registration(request):
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('competitions')
+    else:
+        form = RegistrationForm()
+    return render(request, 'add_registration.html', {'form': form})
+
+
+@login_required
+@ensure_csrf_cookie
 def select_competition(request, competition_id):
     competition = get_object_or_404(Competition, pk=competition_id)
     competition_data = {
@@ -36,23 +117,24 @@ def select_competition(request, competition_id):
     })
 
 
+@login_required
+@ensure_csrf_cookie
 def compete(request, competition_id):
     competition = get_object_or_404(Competition, pk=competition_id)
     categories = Category.objects.all()
-    registrations = Registration.objects.filter(competition =  competition)
+    registrations = (
+        Registration.objects.filter(competition=competition)
+        .select_related("archer", "category")
+    )
 
-    # Create a dictionary to map category_id to a list of archers
     categories_map = defaultdict(list)
     for registration in registrations:
         categories_map[registration.category_id].append(registration.archer)
 
-    # Create a list of tuples (category, archers)
     categories_with_archers = [(category, categories_map[category.id]) for category in categories]
 
     archers = Archer.objects.all()
-    archer_map = {}
-    for archer in archers:
-        archer_map[archer.id] = archer.name
+    archer_map = {archer.id: archer.name for archer in archers}
 
     return render(request, "compete.html",{
         'competition': competition,
@@ -61,10 +143,9 @@ def compete(request, competition_id):
         'archer_map': json.dumps(archer_map)
     })
 
-@csrf_exempt
+@login_required
 def add_score_div(request):
     data = json.loads(request.body)
-    user = request.user
     end_number = data['end_number']
     archer_id = data['archer_id']
     return render(request, "score_div.html",{
@@ -72,10 +153,9 @@ def add_score_div(request):
         'archer_id': archer_id,
     })
 
-@csrf_exempt
+@login_required
 def add_archer_div(request):
     data = json.loads(request.body)
-    user = request.user
     archer_id = data['archer_id']
     archer = get_object_or_404(Archer, pk=archer_id)
     return render(request, "archer_div.html",{
@@ -83,28 +163,26 @@ def add_archer_div(request):
     })
 
 
-@csrf_exempt
+@login_required
 def save_score_db(request):
     data = json.loads(request.body)
-    user = request.user
     archer_id = data['archer_id']
     end_number = data['end_number']
     shoot_array = data['shoot_array']
     category_id = data['category_id']
     competition_json = json.loads(request.session['current_competition'])
-    # print(f"archer_id: {archer_id}, shoot_array: {shoot_array}, end_number: {end_number}, category_id: {category_id}")
     archer = get_object_or_404(Archer, pk=archer_id)
     category = get_object_or_404(Category, pk=category_id)
     competition = get_object_or_404(Competition, pk=competition_json['id'])
     try:
         registration = Registration.objects.filter(competition=competition, category=category, archer=archer).first()
-        # print(f"registration: {registration}")
-        for index, score in enumerate(shoot_array):
-            score_exist = Score.objects.filter(registration=registration, end_number=end_number, shoot_number=index+1).first()
-            if score_exist != None:
-                score_exist.delete()
-            score = Score(registration=registration, score=score, end_number=end_number, shoot_number=index+1)
-            score.save()
+        for index, score_value in enumerate(shoot_array):
+            Score.objects.update_or_create(
+                registration=registration,
+                end_number=end_number,
+                shoot_number=index + 1,
+                defaults={"score": score_value},
+            )
     except IntegrityError:
         return JsonResponse({
             "error": "error saving score"
@@ -112,53 +190,126 @@ def save_score_db(request):
 
     return JsonResponse({"message": "Score saved successfully."}, status=201)
 
+@login_required
+@ensure_csrf_cookie
 def result_screen(request, competition_id):
     competition = get_object_or_404(Competition, pk=competition_id)
-    registrations_categories = Registration.objects.filter(competition =  competition).values('category').distinct()
-    categories = Category.objects.filter(id__in = registrations_categories)
+    registrations_categories = Registration.objects.filter(competition=competition).values('category').distinct()
+    categories = Category.objects.filter(id__in=registrations_categories)
 
     return render(request, "result_screen.html",{
         'competition': competition,
         'categories': categories,
     })
 
-@csrf_exempt
+@login_required
 def result_category(request):
     data = json.loads(request.body)
     competition_json = json.loads(request.session['current_competition'])
     competition_id = competition_json['id']
     category_id = data['category_id']
-    registrations_archers = Registration.objects.filter(competition_id=competition_id, category_id=category_id)
-    # get the last end that has score
-    archer_list = []
-    for registration in registrations_archers:
-        print(f"registration: {registration}")
-        scores = Score.objects.filter(registration_id=registration.id)
-        archer = Archer.objects.get(pk=registration.archer_id)
-        score_sum = 0
-        for score in scores:
-            score_value = 0
-            if score.score == 'X':
-                score_value = 10
-            elif score.score == 'M':
-                score_value = 0
-            else:
-                score_value = int(score.score)
-            score_sum += score_value
-        archer_list.append({
-            'name': archer.name,
-            'score': score_sum
-        })
-    # print(f"archer_list: {archer_list}")
-    # Sorting the list by score in descending order
-    sorted_archer_list = sorted(archer_list, key=lambda x: x['score'], reverse=True)
-    # print(f"sorted_archer_list: {sorted_archer_list}")
-    return JsonResponse({"data": json.dumps(sorted_archer_list)}, status=201)
+
+    # Expression for summing scores via Registration -> Score reverse relation
+    score_value_case_reg = Case(
+        When(score__score='X', then=Value(10)),
+        When(score__score='M', then=Value(0)),
+        default=Cast(F('score__score'), IntegerField()),
+        output_field=IntegerField(),
+    )
+
+    # Expression for computing last end total inside a Score subquery
+    score_value_case_score = Case(
+        When(score='X', then=Value(10)),
+        When(score='M', then=Value(0)),
+        default=Cast('score', IntegerField()),
+        output_field=IntegerField(),
+    )
+
+    registrations = (
+        Registration.objects.filter(competition_id=competition_id, category_id=category_id)
+        .select_related('archer')
+        .annotate(
+            total_score=Coalesce(Sum(score_value_case_reg), Value(0)),
+            tens_count=Coalesce(
+                Sum(
+                    Case(
+                        When(score__score__in=['10', 'X'], then=Value(1)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    )
+                ),
+                Value(0),
+            ),
+            xs_count=Coalesce(
+                Sum(
+                    Case(
+                        When(score__score='X', then=Value(1)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    )
+                ),
+                Value(0),
+            ),
+            last_end_total=Coalesce(
+                Subquery(
+                    Score.objects.filter(registration=OuterRef('pk'))
+                    .values('end_number')
+                    .annotate(end_total=Sum(score_value_case_score))
+                    .order_by('-end_number')
+                    .values('end_total')[:1]
+                ),
+                Value(0),
+            ),
+        )
+        .order_by('-total_score', '-tens_count', '-xs_count', '-last_end_total')
+    )
+
+    archer_list = [
+        {
+            'name': registration.archer.name,
+            'score': registration.total_score,
+            'tens': registration.tens_count,
+            'xs': registration.xs_count,
+            'last_end_total': registration.last_end_total,
+        }
+        for registration in registrations
+    ]
+
+    return JsonResponse({"data": json.dumps(archer_list)}, status=200)
 
 
+@login_required
+@ensure_csrf_cookie
 def shoot_timer(request, competition_id):
     competition = get_object_or_404(Competition, pk=competition_id)
 
     return render(request, "shoot_timer.html",{
         'competition': competition,
     })
+
+
+@login_required
+def get_archer_scores(request):
+    data = json.loads(request.body)
+    archer_id = int(data.get('archer_id'))
+    category_id = int(data.get('category_id'))
+    competition_json = json.loads(request.session['current_competition'])
+    competition_id = competition_json['id']
+
+    registration = (
+        Registration.objects
+        .filter(competition_id=competition_id, category_id=category_id, archer_id=archer_id)
+        .first()
+    )
+
+    if not registration:
+        return JsonResponse({"scores": []}, status=200)
+
+    scores = (
+        Score.objects
+        .filter(registration=registration)
+        .values('end_number', 'shoot_number', 'score')
+        .order_by('end_number', 'shoot_number')
+    )
+
+    return JsonResponse({"scores": list(scores)}, status=200)

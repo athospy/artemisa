@@ -16,6 +16,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
 
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'artemisa/favicon.svg' %}" type="image/svg+xml">
+    <meta name="theme-color" content="#1c2541">
+
     <link href="/static/artemisa/styles.css" rel="stylesheet">
     <link href="/static/artemisa/kioskboard-2.3.0.min.css" rel="stylesheet">
     <script src="/static/artemisa/kioskboard-2.3.0.min.js"></script>
@@ -50,10 +54,22 @@
                     <a class="nav-link" href="{% url 'index' %}">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/admin">Admin</a>
+                    <a class="nav-link" href="{% url 'competitions' %}">Competitions</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Add
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="{% url 'add_competition' %}">Competition</a>
+                        <a class="dropdown-item" href="{% url 'add_category' %}">Category</a>
+                        <a class="dropdown-item" href="{% url 'add_archer' %}">Archer</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="{% url 'add_registration' %}">Register Archer</a>
+                    </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'competitions' %}">Select competition</a>
+                    <a class="nav-link" href="/admin">Admin</a>
                 </li>
                 {% if request.session.current_competition and request.session.current_competition != "0" %}
                     <li class="nav-item" style="font-weight: bold">

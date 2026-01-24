@@ -51,33 +51,274 @@ Here is an overview of the key files and their roles within the Artemisa project
   - **results.js**: Found in the `static` folder, this script enables the automatic looping of results every 3 seconds, cycling through the categories to ensure that the latest standings are continuously visible.
 
 
-## Installation
+## Installation and Setup
 
-1. Create the migrations:
+### Prerequisites
+
+- Python 3.11+
+- Docker and Docker Compose
+- Git
+
+### Quick Start
+
+1. **Clone the repository**:
+
+    ```bash
+    git clone <repository-url>
+    cd artemisa
+    ```
+
+2. **Start the database**:
+
+    ```bash
+    docker compose up -d db
+    ```
+
+    This will:
+    - Pull and run Postgres 17 in a Docker container
+    - Create the database with persistent storage
+    - Expose the database on port 54322
+
+3. **Set up Python virtual environment**:
+
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+
+4. **Install dependencies**:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+    If `requirements.txt` doesn't exist, install the required packages:
+    ```bash
+    pip install django psycopg2-binary gunicorn
+    ```
+
+5. **Configure environment variables** (optional):
+
+    Create a `.env` file in the project root:
+    ```bash
+    DJANGO_SECRET_KEY=your-secret-key-here
+    DJANGO_DEBUG=True
+    DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,artemisa.lajota.com.py
+    DB_NAME=artemisa
+    DB_USER=artemisa
+    DB_PASSWORD=artemisa
+    DB_HOST=localhost
+    DB_PORT=54322
+    ```
+
+6. **Run migrations**:
 
     ```bash
     python manage.py makemigrations
-    ```
-
-2. Create the tables:
-
-    ```bash
     python manage.py migrate
     ```
 
-3. Create a superuser to access the admin interface:
+7. **Create a superuser**:
 
     ```bash
     python manage.py createsuperuser
     ```
 
-4. Run the development server:
+8. **Run the development server**:
 
     ```bash
     python manage.py runserver
     ```
 
-5. Open your web browser and go to `http://127.0.0.1:8000/` to access Artemisa.
+9. **Access the application**:
+
+    Open your web browser and go to `http://127.0.0.1:8000/` to access Artemisa.
+
+### Running the Project
+
+After initial setup, to run the project:
+
+1. **Start the database** (if not already running):
+    ```bash
+    docker compose up -d db
+    ```
+
+2. **Activate virtual environment**:
+    ```bash
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+
+3. **Run the server**:
+    ```bash
+    python manage.py runserver
+    ```
+
+### Stopping the Services
+
+- **Stop the database**:
+    ```bash
+    docker compose down
+    ```
+
+- **Stop the database and remove volumes** (deletes all data):
+    ```bash
+    docker compose down -v
+    ```
+
+### Database Management
+
+- **Connect to the database**:
+    ```bash
+    PGPASSWORD=artemisa psql -h localhost -p 54322 -U artemisa -d artemisa
+    ```
+
+- **View database logs**:
+    ```bash
+    docker compose logs db
+    ```
+
+- **Backup the database**:
+    ```bash
+    docker exec artemisa-db pg_dump -U artemisa -Ft artemisa > backup.tar
+    ```
+
+- **Restore from backup**:
+    ```bash
+    docker exec -i artemisa-db pg_restore -U artemisa --clean --if-exists -d artemisa < backup.tar
+    ```
+
+## Deployment
+
+Below are two deployment approaches: a quick Docker-based development deploy and a production-ready stack with Gunicorn + Nginx.
+
+### Option A: Quick Deploy (Local Docker DB + Django)
+
+- **Prerequisites:** Docker, Python, a `.env` configured as in Installation.
+
+1. Start Postgres:
+    ```bash
+    docker compose up -d db
+    ```
+2. Activate venv and install deps:
+    ```bash
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+3. Apply migrations and collect static:
+    ```bash
+    python manage.py migrate
+    python manage.py collectstatic --noinput
+    ```
+4. Run with Gunicorn (recommended over runserver):
+    ```bash
+    gunicorn capstone.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    ```
+
+You can put Gunicorn behind a reverse proxy (e.g., Caddy or Nginx) locally if desired.
+
+### Option B: Production Deploy (Ubuntu/Debian server)
+
+- **Prerequisites:** A VM with Docker, Git, Python 3.11+, domain/DNS pointed to server.
+
+1. Clone project and set environment:
+    ```bash
+    git clone <repository-url>
+    cd artemisa
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+2. Configure `.env` with production values:
+    ```bash
+    DJANGO_SECRET_KEY=<strong-unique-secret>
+    DJANGO_DEBUG=False
+    DJANGO_ALLOWED_HOSTS=your.domain,localhost
+    CSRF_TRUSTED_ORIGINS=https://your.domain
+    DB_NAME=artemisa
+    DB_USER=artemisa
+    DB_PASSWORD=artemisa
+    DB_HOST=127.0.0.1
+    DB_PORT=5432
+    ```
+3. Provision Postgres (Docker):
+    ```bash
+    docker compose up -d db
+    ```
+4. Apply migrations and collect static files:
+    ```bash
+    python manage.py migrate
+    python manage.py collectstatic --noinput
+    ```
+5. Run Gunicorn as a systemd service:
+    ```bash
+    sudo tee /etc/systemd/system/artemisa.service > /dev/null << 'EOF'
+    [Unit]
+    Description=Artemisa Gunicorn
+    After=network.target
+
+    [Service]
+    User=www-data
+    Group=www-data
+    WorkingDirectory=/srv/artemisa
+    Environment="PATH=/srv/artemisa/venv/bin"
+    ExecStart=/srv/artemisa/venv/bin/gunicorn capstone.wsgi:application --bind 127.0.0.1:8001 --workers 3
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now artemisa
+    ```
+    Adjust `WorkingDirectory` and paths to your repo location.
+
+6. Configure Nginx reverse proxy:
+    ```bash
+    sudo tee /etc/nginx/sites-available/artemisa > /dev/null << 'EOF'
+    server {
+        listen 80;
+        server_name your.domain;
+
+        location /static/ {
+            alias /srv/artemisa/artemisa/static/;
+        }
+
+        location / {
+            proxy_pass http://127.0.0.1:8001;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+    EOF
+    sudo ln -s /etc/nginx/sites-available/artemisa /etc/nginx/sites-enabled/artemisa
+    sudo nginx -t && sudo systemctl restart nginx
+    ```
+
+7. Create superuser (first-time setup):
+    ```bash
+    source /srv/artemisa/venv/bin/activate
+    cd /srv/artemisa
+    python manage.py createsuperuser
+    ```
+
+### Post-Deploy Checklist
+
+- Verify `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` include your domain.
+- Confirm database connectivity and migrations.
+- Check static files are served correctly.
+- Ensure admin is accessible at `/admin` and results/compete/timer pages load.
+
+## Committing Changes
+
+Use the following commands to commit and push the latest work:
+
+```bash
+git add .
+git commit -m "Home redesign, favicon, results fix, timer stages, score restore"
+git push origin main
+```
 
 ## Usage
 

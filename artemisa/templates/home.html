@@ -4,87 +4,108 @@
 
 {% block content %}
 
+<section class="hero d-flex align-items-center justify-content-center">
+    <div class="container text-center hero-content">
+        <h1 class="hero-title">Artemisa</h1>
+        <p class="lead">Modern archery scoring, results, and timing — fast and reliable.</p>
+        <div class="mt-3">
+            <a class="btn btn-primary btn-lg mr-2 cta-btn" href="{% url 'competitions' %}">View Competitions</a>
+            <a class="btn btn-secondary btn-lg cta-btn" href="{% url 'add_registration' %}">Register Archer</a>
+        </div>
+        <div class="mt-4">
+            <small class="text-light">Tip: select a competition to unlock scoring and results.</small>
+        </div>
+    </div>
+    <div class="hero-gradient"></div>
+    <div class="hero-overlay"></div>
+</section>
 
-<div class="jumbotron">
-    <div class="container">
-        <p class="display-4">Welcome to Artemisa!</p>
-        <p>
-            The Premier Archery Scoring System. Experience the thrill of archery competitions like never before with Artemisa, your ultimate companion for tracking and managing archer scores across various categories. Designed with precision and accuracy in mind, our system ensures that every arrow counts and every score is meticulously recorded.
+<div class="container my-5">
+    <div class="row preview-tiles">
+        <div class="col-md-4 mb-4">
+            <a id="link-compete" class="tile d-block text-center p-4" href="{% url 'competitions' %}">
+                <div class="tile-icon mb-2"><i class="bi bi-stopwatch"></i></div>
+                <h3 class="tile-title">Start Scoring</h3>
+                <p class="tile-text">Select archers, record ends, and save scores effortlessly.</p>
+            </a>
+        </div>
+        <div class="col-md-4 mb-4">
+            <a id="link-results" class="tile d-block text-center p-4" href="{% url 'competitions' %}">
+                <div class="tile-icon mb-2"><i class="bi bi-bar-chart"></i></div>
+                <h3 class="tile-title">Live Results</h3>
+                <p class="tile-text">Leaderboard auto-updates with ties resolved by Xs and 10s.</p>
+            </a>
+        </div>
+        <div class="col-md-4 mb-4">
+            <a id="link-timer" class="tile d-block text-center p-4" href="{% url 'competitions' %}">
+                <div class="tile-icon mb-2"><i class="bi bi-trophy"></i></div>
+                <h3 class="tile-title">Shoot Timer</h3>
+                <p class="tile-text">Simple, bold timer optimized for ranges and displays.</p>
+            </a>
+        </div>
+    </div>
 
-            Whether you’re a seasoned competitor or a novice archer, Artemisa provides a seamless and intuitive interface to enhance your competition experience. Join us in elevating the art of archery, one score at a time.
+    <div class="row mt-4">
+        <div class="col-md-4 mb-4">
+            <div class="feature-card p-4 h-100">
+                <h4>Fast Scoring</h4>
+                <p>Toggle archer selection, type scores with a large keypad, and auto-save per end.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-card p-4 h-100">
+                <h4>Real-Time Leaderboard</h4>
+                <p>Sorted by total, 10s, Xs, and last end — updated as you score.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-card p-4 h-100">
+                <h4>Range-Ready Timer</h4>
+                <p>Bold, legible countdown built for visibility in busy shooting lines.</p>
+            </div>
+        </div>
+    </div>
 
-            Start Your Journey with Artemisa – Where Every Point Matters.</p>
+    <div class="metrics bg-light rounded p-4 mt-3 text-center">
+        <div class="row">
+            <div class="col-6 col-md-3 mb-3">
+                <div class="metric-value">{{ competitions_count }}</div>
+                <div class="metric-label">Competitions</div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="metric-value">{{ archers_count }}</div>
+                <div class="metric-label">Archers</div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="metric-value">{{ registrations_count }}</div>
+                <div class="metric-label">Registrations</div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="metric-value">{{ scores_count }}</div>
+                <div class="metric-label">Scores Saved</div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="container">
-    <!-- Example row of columns -->
-    <div class="row">
-        <div class="col-md-3">
-            <p>
-                <h2>Competition Management with Artemisa</h2>
-                <p>Effortlessly manage your archery competitions with Artemisa’s comprehensive competition management features.</p>
-
-                <ul>
-                    <li><span class="feature-title">Name:</span> Customize and distinguish each competition with a unique name.</li>
-                    <li><span class="feature-title">Event Date:</span> Schedule and organize events with precise date settings.</li>
-                    <li><span class="feature-title">Location:</span> Specify the venue to keep participants informed and prepared.</li>
-                    <li><span class="feature-title">Code:</span> Assign a unique code to streamline event identification and management.</li>
-                    <li><span class="feature-title">Description:</span> Provide detailed descriptions to give participants all the essential information about the event.</li>
-                </ul>
-
-                <p>Artemisa simplifies the administrative aspects, allowing you to focus on what truly matters – the competition.</p>
-            </p>
-            <p><a class="btn btn-secondary" href="/admin/artemisa/competition/" role="button">View details &raquo;</a></p>
-        </div>
-        <div class="col-md-3">
-            <p>
-                <h2>Category Management with Artemisa</h2>
-                <p>Streamline your archery competitions by effectively managing categories with Artemisa.</p>
-
-                <ul>
-                    <li><span class="feature-title">Name:</span> Create and manage distinct category names to organize your competition.</li>
-                    <li><span class="feature-title">Code:</span> Assign unique codes to each category for easy identification and management.</li>
-                </ul>
-
-                <p>Artemisa ensures that every category is clearly defined, making your competitions organized and efficient.</p>
-
-
-            </p>
-            <p><a class="btn btn-secondary" href="/admin/artemisa/category/" role="button">View details &raquo;</a></p>
-        </div>
-        <div class="col-md-3">
-            <p>
-                <h2>Archer Management with Artemisa</h2>
-                <p>Simplify the management of archers in your competitions with Artemisa.</p>
-
-                <ul>
-                    <li><span class="feature-title">Name:</span> Easily add and manage archer names to keep track of participants.</li>
-                    <li><span class="feature-title">Email:</span> Maintain a list of archer emails for effective communication and updates.</li>
-                </ul>
-
-                <p>Artemisa helps you keep all archer information organized and accessible, ensuring a smooth competition experience.</p>
-
-            </p>
-            <p><a class="btn btn-secondary" href="/admin/artemisa/archer/" role="button">View details &raquo;</a></p>
-        </div>
-        <div class="col-md-3">
-            <p>
-                <h2>Registration Management with Artemisa</h2>
-                <p>Manage your competition registrations efficiently with Artemisa.</p>
-
-                <ul>
-                    <li><span class="feature-title">Select Competition:</span> Choose the specific competition for which the registration is being done.</li>
-                    <li><span class="feature-title">Select Category:</span> Select the relevant archery category for the competition.</li>
-                    <li><span class="feature-title">Select Archer:</span> Register the participating archers easily by selecting from the list.</li>
-                </ul>
-
-                <p>Artemisa streamlines the registration process, ensuring all details are accurately captured for a well-organized event.</p>
-
-            </p>
-            <p><a class="btn btn-secondary" href="/admin/artemisa/registration/" role="button">View details &raquo;</a></p>
-        </div>
-    </div>
-
+<script>
+    // If a current competition is set, wire direct links
+    (function() {
+        try {
+            const raw = "{{ request.session.current_competition|default:''|escapejs }}";
+            if (!raw) return;
+            const json = JSON.parse(raw);
+            const cid = json.id;
+            const compete = document.getElementById('link-compete');
+            const results = document.getElementById('link-results');
+            const timer = document.getElementById('link-timer');
+            if (compete) compete.setAttribute('href', `/compete/${cid}`);
+            if (results) results.setAttribute('href', `/result_screen/${cid}`);
+            if (timer) timer.setAttribute('href', `/shoot_timer/${cid}`);
+        } catch(e) {
+            // ignore
+        }
+    })();
+</script>
 
 {% endblock %}

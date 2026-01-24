@@ -33,8 +33,78 @@
     font-weight: bold;
 }
 
+.stage {
+    font-family: "Orbitron", sans-serif;
+    font-size: 5vw;
+    font-weight: 700;
+}
+
 
 .highlighted {
     border: 2px solid #007bff; /* Example highlight style */
     background-color: #e7f3ff; /* Example background color */
+}
+
+/* Account for fixed-top navbar */
+body { padding-top: 56px; }
+
+/* Home hero + tiles */
+.hero {
+    position: relative;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    color: #fff;
+    overflow: hidden;
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-title {
+    font-family: "Orbitron", sans-serif;
+    font-weight: 700;
+    font-size: 3rem;
+    letter-spacing: 0.03em;
+}
+.hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(1200px 400px at 50% -10%, rgba(0,123,255,0.45), transparent),
+                linear-gradient(135deg, #0b132b 0%, #1c2541 40%, #3a506b 100%);
+    z-index: 0;
+}
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.35));
+    z-index: 0;
+}
+.cta-btn { min-width: 220px; }
+
+.preview-tiles .tile {
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    transition: transform 140ms ease, box-shadow 140ms ease;
+    text-decoration: none;
+    color: inherit;
+}
+.preview-tiles .tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.1);
+}
+.tile-icon i { font-size: 2rem; color: #007bff; }
+.tile-title { font-weight: 600; margin-bottom: 0.25rem; }
+.tile-text { color: #555; }
+
+.feature-card {
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.metrics .metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+.metrics .metric-label {
+    color: #666;
 }

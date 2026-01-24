@@ -21,12 +21,21 @@
             {% for category, archers in categories_with_archers %}
                 {% if archers %}
                     <div id="category_{{category.id}}" style="display: none" class="categories_dropdown">
-                        <h4>{{category.name}}</h4>
-                        <select multiple='true'>
+                        <h4>{{category.name}} - Select Archers:</h4>
+                        <div class="btn-group-toggle" data-toggle="buttons">
                             {% for archer in archers %}
-                                <option value="{{archer.id}}">{{archer.name}}</option>
+                                <label class="btn btn-outline-primary btn-lg m-2">
+                                    <input type="checkbox" class="archer-checkbox" data-archer-id="{{archer.id}}" autocomplete="off"> {{archer.name}}
+                                </label>
                             {% endfor %}
-                        </select>
+                        </div>
+                    </div>
+                {% else %}
+                    <div id="category_{{category.id}}" style="display: none" class="categories_dropdown">
+                        <div class="alert alert-info" role="alert">
+                            <h5>{{category.name}}</h5>
+                            <p class="mb-0">No archers registered for this category yet. Please register archers using <strong>Add → Register Archer</strong> in the menu.</p>
+                        </div>
                     </div>
                 {% endif %}
             {% endfor %}

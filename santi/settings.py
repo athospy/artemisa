@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "REDACTED"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-change-me")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ['artemisa.lajota.com.py', 'localhost']
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "artemisa.lajota.com.py,localhost").split(",")
 
 
 # Application definition
@@ -77,11 +82,11 @@ WSGI_APPLICATION = "capstone.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'artemisa',
-        'USER': 'postgres',
-        'PASSWORD': 'REDACTED',
-        'HOST': 'localhost',
-        'PORT': '54322',
+        'NAME': os.environ.get('DB_NAME', 'artemisa'),
+        'USER': os.environ.get('DB_USER', 'artemisa'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'artemisa'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '54322'),
     }
 }
 
@@ -128,7 +133,9 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # for form submision through codespaces
-CSRF_TRUSTED_ORIGINS = [ 'https://localhost:8000', 'http://artemisa.lajota.com.py']
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://localhost:8000,http://artemisa.lajota.com.py'
+).split(',')
 
-import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')

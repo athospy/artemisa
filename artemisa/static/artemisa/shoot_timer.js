@@ -5,8 +5,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('#stop_button').addEventListener('click', stop_timer);
 });
 
+function setStage(text) {
+    const el = document.getElementById('stage');
+    if (!el) return;
+    el.textContent = text;
+    el.style.display = 'block';
+}
+
 async function start_preparing_timer() {
     document.querySelector('#clock').style.display = "block";
+    setStage('Get Ready');
     document.querySelector('#start_button').style.display = "none";
     document.querySelector('#stop_button').style.display = "block";
     await beep();
@@ -16,6 +24,7 @@ async function start_preparing_timer() {
 
 async function start_competition_timer() {
     await beep();
+    setStage('Shoot');
     countdown('clock', 3, 0);
 }
 
@@ -25,6 +34,8 @@ async function finish_timer() {
     await beep();
     document.querySelector('#clock').innerHTML = "";
     document.querySelector('#clock').style.display = "none";
+    const stageEl = document.getElementById('stage');
+    if (stageEl) stageEl.style.display = 'none';
     document.querySelector('#start_button').style.display = "block";
     document.querySelector('#stop_button').style.display = "none";
 }
@@ -49,8 +60,8 @@ function countdown(element, minutes, seconds) {
             }
             if (status ==  'competing') {
                 clearInterval(interval);
-                var text = "time's up";
-                el.innerHTML = text;
+                el.innerHTML = '00:00';
+                setStage('Time Out');
                 status = 'preparing';
                 finish_timer();
                 return;
@@ -58,6 +69,7 @@ function countdown(element, minutes, seconds) {
         }
         if (time == 10 && status ==  'competing') {
             warning();
+            setStage('Almost Time Out');
         }
         var minutes = Math.floor( time / 60 );
         if (minutes < 10) minutes = "0" + minutes;

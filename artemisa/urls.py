@@ -4,7 +4,12 @@ from . import views
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("register/", views.register, name="register"),
     path("competitions", views.competitions, name="competitions"),
+    path("add_competition/", views.add_competition, name="add_competition"),
+    path("add_category/", views.add_category, name="add_category"),
+    path("add_archer/", views.add_archer, name="add_archer"),
+    path("add_registration/", views.add_registration, name="add_registration"),
     path("select_competition/<int:competition_id>", views.select_competition, name="select_competition"),
     path("compete/<int:competition_id>", views.compete, name="compete"),
     path("add_score_div", views.add_score_div, name="add_score_div"),
@@ -13,4 +18,5 @@ urlpatterns = [
     path("result_screen/<int:competition_id>", views.result_screen, name="result_screen"),
     path("result_category", views.result_category, name="result_category"),
     path("shoot_timer/<int:competition_id>", views.shoot_timer, name="shoot_timer"),
+    path("get_archer_scores", views.get_archer_scores, name="get_archer_scores"),
 ]

@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block title %}Add Competition{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Add New Competition</h2>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <ul class="mb-0">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'add_competition' %}">
+                        {% csrf_token %}
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.name.id_for_label }}">Competition Name:</label>
+                            {{ form.name }}
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="{{ form.description.id_for_label }}">Description:</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="{{ form.event_date.id_for_label }}">Event Date:</label>
+                            {{ form.event_date }}
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="{{ form.location.id_for_label }}">Location:</label>
+                            {{ form.location }}
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="{{ form.code.id_for_label }}">Code:</label>
+                            {{ form.code }}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Add Competition</button>
+                        <a href="{% url 'competitions' %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
