@@ -59,6 +59,6 @@ jobs:
           python manage.py collectstatic --noinput
 
           # Restart services (configure secrets with correct names)
-          systemctl restart ${{ secrets.PROD_GUNICORN_SERVICE || 'gunicorn' }} || true
+          systemctl restart ${{ secrets.PROD_GUNICORN_SERVICE || 'artemisa_gunicorn' }} || true
           systemctl reload ${{ secrets.PROD_NGINX_SERVICE || 'nginx' }} || true
           EOF
