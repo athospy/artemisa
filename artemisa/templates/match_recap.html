@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %} Artemisa - {{competition.code}} recap {% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <div class="container">
+        <p class="display-4 text-center">Match Recap</p>
+        <p class="text-center">{{ competition.name }}</p>
+        <p class="text-center">
+            <button id="generate_recap_btn" type="button" class="btn btn-primary btn-lg" data-competition_id="{{ competition.id }}">Generate AI recap</button>
+        </p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <p id="recap_status" class="text-muted"></p>
+    <p id="recap_text" style="white-space: pre-line;"></p>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'artemisa/match_recap.js' %}"></script>
+{% endblock %}

@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.db.models import Sum, Case, When, Value, IntegerField, OuterRef, Subquery, F
 from django.db.models.functions import Coalesce, Cast
 from django.contrib.auth import login
+import anthropic
 
 from .models import Competition
 from .models import Registration
@@ -286,6 +287,93 @@ def shoot_timer(request, competition_id):
     return render(request, "shoot_timer.html",{
         'competition': competition,
     })
+
+
+def _get_competition_standings(competition):
+    """Final standings per category for a competition, using the same scoring
+    and tiebreaker rules as result_category (X=10+tiebreaker, M=0)."""
+    registered_category_ids = Registration.objects.filter(competition=competition).values('category').distinct()
+    categories = Category.objects.filter(id__in=registered_category_ids)
+
+    score_value_case = Case(
+        When(score__score='X', then=Value(10)),
+        When(score__score='M', then=Value(0)),
+        default=Cast(F('score__score'), IntegerField()),
+        output_field=IntegerField(),
+    )
+
+    standings = []
+    for category in categories:
+        registrations = (
+            Registration.objects.filter(competition=competition, category=category)
+            .select_related('archer')
+            .annotate(
+                total_score=Coalesce(Sum(score_value_case), Value(0)),
+                tens_count=Coalesce(
+                    Sum(Case(When(score__score__in=['10', 'X'], then=Value(1)), default=Value(0), output_field=IntegerField())),
+                    Value(0),
+                ),
+                xs_count=Coalesce(
+                    Sum(Case(When(score__score='X', then=Value(1)), default=Value(0), output_field=IntegerField())),
+                    Value(0),
+                ),
+            )
+            .order_by('-total_score', '-tens_count', '-xs_count')
+        )
+        standings.append({
+            'category': category.name,
+            'archers': [
+                {'name': r.archer.name, 'score': r.total_score, 'tens': r.tens_count, 'xs': r.xs_count}
+                for r in registrations
+            ],
+        })
+    return standings
+
+
+@login_required
+@ensure_csrf_cookie
+def match_recap(request, competition_id):
+    competition = get_object_or_404(Competition, pk=competition_id)
+    return render(request, "match_recap.html", {"competition": competition})
+
+
+@login_required
+def generate_match_recap(request, competition_id):
+    competition = get_object_or_404(Competition, pk=competition_id)
+    standings = _get_competition_standings(competition)
+
+    if not any(category['archers'] for category in standings):
+        return JsonResponse({"error": "No scores recorded yet for this competition."}, status=400)
+
+    standings_text = "\n".join(
+        f"{category['category']}: " + ", ".join(
+            f"{archer['name']} ({archer['score']} pts, {archer['tens']} tens, {archer['xs']} Xs)"
+            for archer in category['archers']
+        )
+        for category in standings
+    )
+
+    try:
+        client = anthropic.Anthropic()
+        response = client.messages.create(
+            model="claude-opus-4-8",
+            max_tokens=1024,
+            system=(
+                "You are a sports commentator writing a short, energetic recap of an archery "
+                "tournament for spectators. Highlight the category leaders, standout scores "
+                "(many 10s/Xs), and close finishes. Keep it to 2-3 short paragraphs. Only use "
+                "facts present in the standings below."
+            ),
+            messages=[{
+                "role": "user",
+                "content": f"Competition: {competition.name}\n\nFinal standings by category:\n{standings_text}",
+            }],
+        )
+    except Exception:
+        return JsonResponse({"error": "Could not generate the recap right now. Please try again."}, status=502)
+
+    recap_text = next((block.text for block in response.content if block.type == "text"), "")
+    return JsonResponse({"recap": recap_text})
 
 
 @login_required

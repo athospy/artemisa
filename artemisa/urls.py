@@ -19,4 +19,6 @@ urlpatterns = [
     path("result_category", views.result_category, name="result_category"),
     path("shoot_timer/<int:competition_id>", views.shoot_timer, name="shoot_timer"),
     path("get_archer_scores", views.get_archer_scores, name="get_archer_scores"),
+    path("match_recap/<int:competition_id>", views.match_recap, name="match_recap"),
+    path("generate_match_recap/<int:competition_id>", views.generate_match_recap, name="generate_match_recap"),
 ]
