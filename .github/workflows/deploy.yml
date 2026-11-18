@@ -43,6 +43,9 @@ jobs:
           EOF
 
       - name: Sync repo to server via rsync
+        # /static/ and /media/ are anchored to the repo root: they skip only the
+        # collectstatic output and uploads. Unanchored 'static/' also skipped
+        # artemisa/static/, so JS/CSS changes never reached the server.
         run: |
           rsync -az \
             --exclude '.git/' \
@@ -52,8 +55,8 @@ jobs:
             --exclude 'aremisaenv/' \
             --exclude 'artemisaenv/' \
             --exclude '*.env' \
-            --exclude 'media/' \
-            --exclude 'static/' \
+            --exclude '/media/' \
+            --exclude '/static/' \
             --exclude 'node_modules/' \
             ./ ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:${{ secrets.PROD_PROJECT_PATH }}
 
