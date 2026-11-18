@@ -81,6 +81,9 @@ jobs:
           python manage.py collectstatic --noinput
           
           # Fix permissions for www-data to serve static files
+          # media/ doesn't exist until the first upload; without it chown fails,
+          # set -e stops the script and gunicorn is never restarted.
+          mkdir -p static media
           chown -R www-data:www-data static/ media/
           chmod -R u+rw static/ media/
 
