@@ -1,4 +1,6 @@
 import json
+from types import SimpleNamespace
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -6,6 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from . import recap
 from .models import Archer, Category, Competition, Registration, Score, validate_score
 
 
@@ -46,8 +49,8 @@ class PublicDemoAccessTests(TestCase):
         self.assertContains(response, "Demo")
         self.assertContains(response, reverse("result_screen", args=[self.demo.id]))
         self.assertContains(response, reverse("shoot_timer", args=[self.demo.id]))
+        self.assertContains(response, reverse("match_recap", args=[self.demo.id]))
         self.assertNotContains(response, reverse("compete", args=[self.demo.id]))
-        self.assertNotContains(response, reverse("match_recap", args=[self.demo.id]))
 
     def test_demo_page_404_when_no_demo_exists(self):
         self.demo.delete()
@@ -62,8 +65,8 @@ class PublicDemoAccessTests(TestCase):
         self.client.get(reverse("demo"))
         self.assertEqual(self.client.session["current_competition"], before)
 
-    def test_visitor_can_open_demo_results_and_timer(self):
-        for name in ("result_screen", "shoot_timer"):
+    def test_visitor_can_open_demo_results_timer_and_recap(self):
+        for name in ("result_screen", "shoot_timer", "match_recap"):
             response = self.client.get(reverse(name, args=[self.demo.id]))
             self.assertEqual(response.status_code, 200, name)
 
@@ -73,12 +76,13 @@ class PublicDemoAccessTests(TestCase):
             self.assertRedirects(response, f"{reverse('login')}?next={reverse(name, args=[self.real.id])}",
                                  fetch_redirect_response=False, msg_prefix=name)
 
-    def test_scoring_and_recap_stay_private_even_for_the_demo(self):
-        for name in ("compete", "match_recap"):
-            response = self.client.get(reverse(name, args=[self.demo.id]))
-            self.assertEqual(response.status_code, 302, name)
-        response = self.client.post(reverse("generate_match_recap", args=[self.demo.id]))
+    def test_scoring_stays_private_even_for_the_demo(self):
+        response = self.client.get(reverse("compete", args=[self.demo.id]))
         self.assertEqual(response.status_code, 302)
+
+    def test_visitor_cannot_get_a_real_competition_recap(self):
+        response = self.client.post(reverse("generate_match_recap", args=[self.real.id]))
+        self.assertEqual(response.status_code, 403)
 
     def test_logged_in_user_still_opens_real_competition_pages(self):
         self.client.force_login(self.user)
@@ -140,6 +144,115 @@ class PublicDemoAccessTests(TestCase):
         self.assertNotContains(self.client.get(reverse("login")), "Register here")
 
 
+def fake_claude_response(text="Lucía wins on tens.", stop_reason="end_turn"):
+    return SimpleNamespace(stop_reason=stop_reason, content=[SimpleNamespace(type="text", text=text)])
+
+
+@mock.patch("artemisa.recap.anthropic.Anthropic")
+class SavedRecapTests(TestCase):
+    """The AI recap is saved and reused; visitors never cause an API call."""
+
+    def setUp(self):
+        self.category = Category.objects.create(name="Recurve Bow Women", code="RW")
+        self.demo = make_competition("Demo", is_demo=True)
+        self.real = make_competition("Real event")
+        self.registration = register_with_arrows(self.real, self.category, "Real Archer", ["10", "9", "X", "8", "7", "M"])
+        register_with_arrows(self.demo, self.category, "Demo Archer", ["9"] * 6)
+        self.user = User.objects.create_user("organizer", password="test-pass-123")
+
+    def generate(self, competition):
+        return self.client.post(reverse("generate_match_recap", args=[competition.id]))
+
+    def test_first_request_calls_claude_and_saves_the_recap(self, client_class):
+        create = client_class.return_value.beta.messages.create
+        create.return_value = fake_claude_response("A great day.")
+        self.client.force_login(self.user)
+
+        response = self.generate(self.real)
+
+        self.assertEqual(response.json(), {"recap": "A great day."})
+        self.real.refresh_from_db()
+        self.assertEqual(self.real.ai_recap, "A great day.")
+        self.assertEqual(self.real.ai_recap_input, recap.recap_input(self.real))
+        kwargs = create.call_args.kwargs
+        self.assertEqual(kwargs["model"], "claude-opus-5-5")
+        self.assertEqual(kwargs["fallbacks"], "default")
+        self.assertIn("Real Archer (44 pts, 2 tens, 1 Xs)", kwargs["messages"][0]["content"])
+
+    def test_unchanged_standings_reuse_the_saved_recap(self, client_class):
+        create = client_class.return_value.beta.messages.create
+        create.return_value = fake_claude_response("First.")
+        self.client.force_login(self.user)
+        self.generate(self.real)
+        create.return_value = fake_claude_response("Second.")
+
+        self.assertEqual(self.generate(self.real).json(), {"recap": "First."})
+        self.assertEqual(create.call_count, 1)
+
+    def test_changed_scores_make_a_new_recap(self, client_class):
+        create = client_class.return_value.beta.messages.create
+        create.return_value = fake_claude_response("First.")
+        self.client.force_login(self.user)
+        self.generate(self.real)
+        Score.objects.filter(registration=self.registration, shoot_number=6).update(score="10")
+        create.return_value = fake_claude_response("Second.")
+
+        self.assertEqual(self.generate(self.real).json(), {"recap": "Second."})
+        self.assertEqual(create.call_count, 2)
+
+    def test_visitor_gets_the_saved_demo_recap_without_an_api_call(self, client_class):
+        self.demo.ai_recap = "Saved demo recap."
+        self.demo.ai_recap_input = recap.recap_input(self.demo)
+        self.demo.save()
+
+        self.assertEqual(self.generate(self.demo).json(), {"recap": "Saved demo recap."})
+        page = self.client.get(reverse("match_recap", args=[self.demo.id]))
+        self.assertContains(page, "Saved demo recap.")
+        self.assertNotContains(page, "generate_recap_btn")
+        client_class.assert_not_called()
+
+    def test_visitor_never_triggers_generation(self, client_class):
+        response = self.generate(self.demo)  # no saved recap yet
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(self.client.get(reverse("match_recap", args=[self.demo.id])),
+                            "No AI recap has been written")
+        client_class.assert_not_called()
+
+    def test_stale_saved_recap_is_not_shown_to_visitors(self, client_class):
+        self.demo.ai_recap = "Old recap."
+        self.demo.ai_recap_input = "standings that no longer match"
+        self.demo.save()
+        self.assertEqual(self.generate(self.demo).status_code, 404)
+        self.assertNotContains(self.client.get(reverse("match_recap", args=[self.demo.id])), "Old recap.")
+
+    def test_logged_in_user_sees_the_button_until_a_recap_is_saved(self, client_class):
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get(reverse("match_recap", args=[self.real.id])), "generate_recap_btn")
+
+    def test_api_error_returns_502_and_saves_nothing(self, client_class):
+        client_class.return_value.beta.messages.create.side_effect = RuntimeError("network down")
+        self.client.force_login(self.user)
+        with self.assertLogs("artemisa.views", level="ERROR"):
+            response = self.generate(self.real)
+        self.assertEqual(response.status_code, 502)
+        self.real.refresh_from_db()
+        self.assertEqual(self.real.ai_recap, "")
+
+    def test_refusal_returns_502_and_saves_nothing(self, client_class):
+        client_class.return_value.beta.messages.create.return_value = fake_claude_response("", stop_reason="refusal")
+        self.client.force_login(self.user)
+        with self.assertLogs("artemisa.views", level="ERROR"):
+            self.assertEqual(self.generate(self.real).status_code, 502)
+        self.real.refresh_from_db()
+        self.assertEqual(self.real.ai_recap, "")
+
+    def test_no_scores_returns_400_without_an_api_call(self, client_class):
+        empty = make_competition("Empty")
+        self.client.force_login(self.user)
+        self.assertEqual(self.generate(empty).status_code, 400)
+        client_class.assert_not_called()
+
+
 class SeedDemoTests(TestCase):
     def setUp(self):
         self.real = make_competition("Real event")
@@ -164,6 +277,13 @@ class SeedDemoTests(TestCase):
         call_command("seed_demo", stdout=open("/dev/null", "w"))
         for value in Score.objects.values_list("score", flat=True).distinct():
             validate_score(value)  # raises ValidationError if not 0-10, X or M
+
+    def test_demo_gets_the_committed_ai_recap(self):
+        # Fails if the demo data changes without rerunning `seed_demo --refresh-recap`.
+        call_command("seed_demo", stdout=open("/dev/null", "w"))
+        demo = Competition.objects.get(is_demo=True)
+        self.assertTrue(demo.ai_recap)
+        self.assertEqual(recap.saved_recap(demo, recap.recap_input(demo)), demo.ai_recap)
 
     def test_recurve_women_top_two_tie_and_the_leader_wins_on_tens(self):
         call_command("seed_demo", stdout=open("/dev/null", "w"))

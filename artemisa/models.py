@@ -20,6 +20,10 @@ class Competition(models.Model):
     # A demo competition's results and timer are visible without logging in.
     # Real events stay private. See `python manage.py seed_demo`.
     is_demo = models.BooleanField(default=False)
+    # Last AI match recap and the exact standings text it was written from
+    # (see artemisa/recap.py). Reused while the standings haven't changed.
+    ai_recap = models.TextField(blank=True, default="")
+    ai_recap_input = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

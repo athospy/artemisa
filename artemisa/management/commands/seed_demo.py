@@ -2,18 +2,29 @@
 
     python manage.py seed_demo
 
-Visitors can open this competition's results screen and shoot timer without logging
-in (see Competition.is_demo). Everything here is made up. Running the command again
-deletes the demo's registrations and scores and recreates them, so it is safe to rerun
-after someone edits the demo. Real competitions are never touched.
+Visitors can open this competition's results screen, shoot timer and AI match recap
+without logging in (see Competition.is_demo). Everything here is made up. Running the
+command again deletes the demo's registrations and scores and recreates them, so it is
+safe to rerun after someone edits the demo. Real competitions are never touched.
+
+The demo's AI recap is stored in demo_recap.json next to this file, so the server needs
+no API key: the saved text is attached as long as it was written from the same
+standings. After changing the demo data, rewrite it once with a key available:
+
+    python manage.py seed_demo --refresh-recap
 """
+import json
 import random
+from pathlib import Path
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from artemisa import recap
 from artemisa.models import Archer, Category, Competition, Registration, Score
+
+DEMO_RECAP_FILE = Path(__file__).with_name("demo_recap.json")
 
 DEMO_CODE = "DEMO"
 DEMO_CLUB = "Demo Archery Club"
@@ -73,6 +84,12 @@ def tied_arrows(leader_arrows):
 class Command(BaseCommand):
     help = "Create or reset the public demo tournament (made-up archers and scores)."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--refresh-recap", action="store_true",
+            help=f"Ask Claude for a new demo recap and save it to {DEMO_RECAP_FILE.name} (needs an API key).",
+        )
+
     @transaction.atomic
     def handle(self, *args, **options):
         rng = random.Random(RANDOM_SEED)
@@ -124,8 +141,39 @@ class Command(BaseCommand):
                     for i, arrow in enumerate(arrows)
                 )
 
+        self.attach_recap(competition, refresh=options["refresh_recap"])
+
         self.stdout.write(self.style.SUCCESS(
             f"Demo ready: '{competition.name}' (id {competition.id}), "
             f"{len(ARCHERS)} archers, {len(ARCHERS) * ENDS * ARROWS_PER_END} arrows. "
             f"Open /demo/"
         ))
+
+    def attach_recap(self, competition, refresh):
+        """Save the demo's AI recap on the competition, from demo_recap.json or,
+        with --refresh-recap, from a new Claude call (which also rewrites the file)."""
+        current_input = recap.recap_input(competition)
+        if refresh:
+            saved = {
+                "model": recap.RECAP_MODEL,
+                "generated_at": timezone.now().isoformat(timespec="seconds"),
+                "input": current_input,
+                "recap": recap.generate_recap(current_input),
+            }
+            DEMO_RECAP_FILE.write_text(json.dumps(saved, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            self.stdout.write(f"New demo recap written to {DEMO_RECAP_FILE.name}.")
+        elif DEMO_RECAP_FILE.exists():
+            saved = json.loads(DEMO_RECAP_FILE.read_text(encoding="utf-8"))
+        else:
+            saved = {}
+
+        if saved.get("input") == current_input:
+            competition.ai_recap = saved["recap"]
+            competition.ai_recap_input = current_input
+        else:
+            competition.ai_recap = competition.ai_recap_input = ""
+            self.stdout.write(self.style.WARNING(
+                f"{DEMO_RECAP_FILE.name} doesn't match the demo standings; the demo has no AI recap. "
+                "Run: python manage.py seed_demo --refresh-recap"
+            ))
+        competition.save(update_fields=["ai_recap", "ai_recap_input"])

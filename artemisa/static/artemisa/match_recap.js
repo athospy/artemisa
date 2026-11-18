@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const button = document.querySelector('#generate_recap_btn');
     const statusEl = document.querySelector('#recap_status');
     const textEl = document.querySelector('#recap_text');
+    // The button only exists for logged-in users when there is no saved recap.
+    if (!button) return;
 
     button.addEventListener('click', function() {
         const competitionId = button.dataset.competition_id;
