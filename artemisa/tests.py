@@ -1,3 +1,178 @@
-from django.test import TestCase
+import json
 
-# Create your tests here.
+from django.contrib.auth.models import User
+from django.core.management import call_command
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from .models import Archer, Category, Competition, Registration, Score, validate_score
+
+
+def make_competition(name, is_demo=False):
+    return Competition.objects.create(
+        name=name, description="", event_date=timezone.now(), location="Range",
+        code=name.upper(), is_demo=is_demo,
+    )
+
+
+def register_with_arrows(competition, category, archer_name, arrows):
+    archer = Archer.objects.create(name=archer_name, club_name="Club", email=f"{archer_name}@example.com")
+    registration = Registration.objects.create(competition=competition, category=category, archer=archer)
+    for i, arrow in enumerate(arrows):
+        Score.objects.create(registration=registration, end_number=i // 6 + 1, shoot_number=i % 6 + 1, score=arrow)
+    return registration
+
+
+class PublicDemoAccessTests(TestCase):
+    """Visitors can see the demo competition (results, timer) and nothing else."""
+
+    def setUp(self):
+        self.category = Category.objects.create(name="Recurve Bow Women", code="RW")
+        self.demo = make_competition("Demo", is_demo=True)
+        self.real = make_competition("Real event")
+        register_with_arrows(self.demo, self.category, "Demo Archer", ["X", "9", "8", "M", "10", "7"])
+        register_with_arrows(self.real, self.category, "Real Archer", ["10", "10", "10", "10", "10", "10"])
+        self.user = User.objects.create_user("organizer", password="test-pass-123")
+
+    def leaderboard(self, body):
+        return self.client.post(reverse("result_category"), json.dumps(body), content_type="application/json")
+
+    # --- pages -----------------------------------------------------------------
+
+    def test_demo_page_is_public_and_read_only(self):
+        response = self.client.get(reverse("demo"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demo")
+        self.assertContains(response, reverse("result_screen", args=[self.demo.id]))
+        self.assertContains(response, reverse("shoot_timer", args=[self.demo.id]))
+        self.assertNotContains(response, reverse("compete", args=[self.demo.id]))
+        self.assertNotContains(response, reverse("match_recap", args=[self.demo.id]))
+
+    def test_demo_page_404_when_no_demo_exists(self):
+        self.demo.delete()
+        self.assertEqual(self.client.get(reverse("demo")).status_code, 404)
+
+    def test_demo_page_does_not_change_the_scorers_session(self):
+        # select_competition stores the competition scores are saved into; the demo
+        # page must not switch it, or a scorer would save into the demo by mistake.
+        self.client.force_login(self.user)
+        self.client.get(reverse("select_competition", args=[self.real.id]))
+        before = self.client.session["current_competition"]
+        self.client.get(reverse("demo"))
+        self.assertEqual(self.client.session["current_competition"], before)
+
+    def test_visitor_can_open_demo_results_and_timer(self):
+        for name in ("result_screen", "shoot_timer"):
+            response = self.client.get(reverse(name, args=[self.demo.id]))
+            self.assertEqual(response.status_code, 200, name)
+
+    def test_visitor_is_sent_to_login_for_real_competition_pages(self):
+        for name in ("result_screen", "shoot_timer", "compete", "match_recap"):
+            response = self.client.get(reverse(name, args=[self.real.id]))
+            self.assertRedirects(response, f"{reverse('login')}?next={reverse(name, args=[self.real.id])}",
+                                 fetch_redirect_response=False, msg_prefix=name)
+
+    def test_scoring_and_recap_stay_private_even_for_the_demo(self):
+        for name in ("compete", "match_recap"):
+            response = self.client.get(reverse(name, args=[self.demo.id]))
+            self.assertEqual(response.status_code, 302, name)
+        response = self.client.post(reverse("generate_match_recap", args=[self.demo.id]))
+        self.assertEqual(response.status_code, 302)
+
+    def test_logged_in_user_still_opens_real_competition_pages(self):
+        self.client.force_login(self.user)
+        for name in ("result_screen", "shoot_timer"):
+            self.assertEqual(self.client.get(reverse(name, args=[self.real.id])).status_code, 200, name)
+
+    # --- leaderboard data ------------------------------------------------------
+
+    def test_visitor_gets_demo_leaderboard(self):
+        response = self.leaderboard({"competition_id": self.demo.id, "category_id": self.category.id})
+        self.assertEqual(response.status_code, 200)
+        rows = json.loads(response.json()["data"])
+        # X=10, 9, 8, M=0, 10, 7
+        self.assertEqual(rows, [{"name": "Demo Archer", "score": 44, "tens": 2, "xs": 1, "last_end_total": 44}])
+
+    def test_visitor_cannot_read_real_leaderboard(self):
+        response = self.leaderboard({"competition_id": self.real.id, "category_id": self.category.id})
+        self.assertEqual(response.status_code, 403)
+
+    def test_leaderboard_needs_a_competition(self):
+        response = self.leaderboard({"category_id": self.category.id})
+        self.assertEqual(response.status_code, 400)
+
+    def test_leaderboard_rejects_a_non_numeric_competition(self):
+        response = self.leaderboard({"competition_id": "abc", "category_id": self.category.id})
+        self.assertEqual(response.status_code, 400)
+
+    def test_leaderboard_uses_the_page_competition_not_the_session(self):
+        # Bug fixed here: the session said "demo" but the page asked for the real event.
+        self.client.force_login(self.user)
+        self.client.get(reverse("select_competition", args=[self.demo.id]))
+        response = self.leaderboard({"competition_id": self.real.id, "category_id": self.category.id})
+        self.assertEqual(json.loads(response.json()["data"])[0]["name"], "Real Archer")
+
+    def test_leaderboard_falls_back_to_session_for_old_clients(self):
+        self.client.force_login(self.user)
+        self.client.get(reverse("select_competition", args=[self.real.id]))
+        response = self.leaderboard({"category_id": self.category.id})
+        self.assertEqual(json.loads(response.json()["data"])[0]["name"], "Real Archer")
+
+    # --- home, sign-up ------------------------------------------------------------
+
+    def test_home_shows_demo_button_to_visitors(self):
+        response = self.client.get(reverse("index"))
+        self.assertContains(response, "Try the live demo")
+
+    def test_home_hides_demo_button_when_there_is_no_demo(self):
+        self.demo.delete()
+        self.assertNotContains(self.client.get(reverse("index")), "Try the live demo")
+
+    def test_home_shows_organizer_buttons_when_logged_in(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("index"))
+        self.assertContains(response, "View Competitions")
+        self.assertNotContains(response, "Try the live demo")
+
+    def test_public_sign_up_is_closed(self):
+        self.assertEqual(self.client.get("/register/").status_code, 404)
+        self.assertNotContains(self.client.get(reverse("login")), "Register here")
+
+
+class SeedDemoTests(TestCase):
+    def setUp(self):
+        self.real = make_competition("Real event")
+        self.category = Category.objects.create(name="Recurve Bow Women", code="RW")
+        register_with_arrows(self.real, self.category, "Real Archer", ["9"] * 6)
+
+    def test_creates_the_demo_and_reuses_existing_categories(self):
+        call_command("seed_demo", stdout=open("/dev/null", "w"))
+        demo = Competition.objects.get(is_demo=True)
+        self.assertEqual(Registration.objects.filter(competition=demo).count(), 16)
+        self.assertEqual(Score.objects.filter(registration__competition=demo).count(), 16 * 36)
+        self.assertEqual(Category.objects.filter(code="RW").count(), 1)  # reused, not duplicated
+
+    def test_rerun_resets_only_the_demo(self):
+        call_command("seed_demo", stdout=open("/dev/null", "w"))
+        call_command("seed_demo", stdout=open("/dev/null", "w"))
+        self.assertEqual(Competition.objects.filter(is_demo=True).count(), 1)
+        self.assertEqual(Score.objects.filter(registration__competition__is_demo=True).count(), 16 * 36)
+        self.assertEqual(Score.objects.filter(registration__competition=self.real).count(), 6)
+
+    def test_every_arrow_is_a_valid_score(self):
+        call_command("seed_demo", stdout=open("/dev/null", "w"))
+        for value in Score.objects.values_list("score", flat=True).distinct():
+            validate_score(value)  # raises ValidationError if not 0-10, X or M
+
+    def test_recurve_women_top_two_tie_and_the_leader_wins_on_tens(self):
+        call_command("seed_demo", stdout=open("/dev/null", "w"))
+        demo = Competition.objects.get(is_demo=True)
+        response = self.client.post(
+            reverse("result_category"),
+            json.dumps({"competition_id": demo.id, "category_id": self.category.id}),
+            content_type="application/json",
+        )
+        first, second = json.loads(response.json()["data"])[:2]
+        self.assertEqual(first["score"], second["score"])
+        self.assertGreater(first["tens"], second["tens"])

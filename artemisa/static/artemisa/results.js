@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRFToken': csrfToken,
             },
             body: JSON.stringify({
+                competition_id: document.querySelector('#result_container').dataset.competitionId,
                 category_id: category_id,
             })
         })
@@ -49,22 +50,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // Parse the JSON string to get the array
             const archerList = JSON.parse(result.data);
 
-            // Loop through the array and access each object
-            let counter = 0;
-            archerList.forEach(archer => {
-                counter ++;
-                // console.log(`Name: ${archer.name}, Score: ${archer.score}`);
-                result_container.insertAdjacentHTML(
-                    'beforeend',
-                    `<div class="row justify-content-between mt-4 align-items-center">
-                        <h3 class="col-1">${counter}</h3>
-                        <h3 class="col-5">${archer.name}</h3>
-                        <h3 class="col-2 text-center">${archer.score}</h3>
-                        <h4 class="col-1 text-center">${archer.tens}</h4>
-                        <h4 class="col-1 text-center">${archer.xs}</h4>
-                        <h4 class="col-2 text-center">${archer.last_end_total}</h4>
-                    </div>`
-                );
+            // Build each row with textContent so archer names are shown as text,
+            // never parsed as HTML (this page is public for the demo tournament).
+            archerList.forEach((archer, i) => {
+                const row = document.createElement('div');
+                row.className = 'row justify-content-between mt-4 align-items-center';
+                [
+                    ['h3', 'col-1', i + 1],
+                    ['h3', 'col-5', archer.name],
+                    ['h3', 'col-2 text-center', archer.score],
+                    ['h4', 'col-1 text-center', archer.tens],
+                    ['h4', 'col-1 text-center', archer.xs],
+                    ['h4', 'col-2 text-center', archer.last_end_total],
+                ].forEach(([tag, className, value]) => {
+                    const cell = document.createElement(tag);
+                    cell.className = className;
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+                result_container.appendChild(row);
             });
 
         })

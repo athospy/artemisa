@@ -9,11 +9,22 @@
         <h1 class="hero-title">Artemisa</h1>
         <p class="lead">Modern archery scoring, results, and timing — fast and reliable.</p>
         <div class="mt-3">
-            <a class="btn btn-primary btn-lg mr-2 cta-btn" href="{% url 'competitions' %}">View Competitions</a>
-            <a class="btn btn-secondary btn-lg cta-btn" href="{% url 'add_registration' %}">Register Archer</a>
+            {% if user.is_authenticated %}
+                <a class="btn btn-primary btn-lg mr-2 cta-btn" href="{% url 'competitions' %}">View Competitions</a>
+                <a class="btn btn-secondary btn-lg cta-btn" href="{% url 'add_registration' %}">Register Archer</a>
+            {% else %}
+                {% if has_demo %}
+                    <a class="btn btn-primary btn-lg mr-2 cta-btn" href="{% url 'demo' %}">Try the live demo</a>
+                {% endif %}
+                <a class="btn btn-secondary btn-lg cta-btn" href="{% url 'login' %}">Organizer login</a>
+            {% endif %}
         </div>
         <div class="mt-4">
-            <small class="text-light">Tip: select a competition to unlock scoring and results.</small>
+            {% if user.is_authenticated %}
+                <small class="text-light">Tip: select a competition to unlock scoring and results.</small>
+            {% elif has_demo %}
+                <small class="text-light">The demo is a made-up tournament: live leaderboard and shoot timer, no account needed.</small>
+            {% endif %}
         </div>
     </div>
     <div class="hero-gradient"></div>
@@ -23,21 +34,21 @@
 <div class="container my-5">
     <div class="row preview-tiles">
         <div class="col-md-4 mb-4">
-            <a id="link-compete" class="tile d-block text-center p-4" href="{% url 'competitions' %}">
+            <a id="link-compete" class="tile d-block text-center p-4" href="{% if not user.is_authenticated and has_demo %}{% url 'demo' %}{% else %}{% url 'competitions' %}{% endif %}">
                 <div class="tile-icon mb-2"><i class="bi bi-stopwatch"></i></div>
                 <h3 class="tile-title">Start Scoring</h3>
                 <p class="tile-text">Select archers, record ends, and save scores effortlessly.</p>
             </a>
         </div>
         <div class="col-md-4 mb-4">
-            <a id="link-results" class="tile d-block text-center p-4" href="{% url 'competitions' %}">
+            <a id="link-results" class="tile d-block text-center p-4" href="{% if not user.is_authenticated and has_demo %}{% url 'demo' %}{% else %}{% url 'competitions' %}{% endif %}">
                 <div class="tile-icon mb-2"><i class="bi bi-bar-chart"></i></div>
                 <h3 class="tile-title">Live Results</h3>
                 <p class="tile-text">Leaderboard auto-updates with ties resolved by Xs and 10s.</p>
             </a>
         </div>
         <div class="col-md-4 mb-4">
-            <a id="link-timer" class="tile d-block text-center p-4" href="{% url 'competitions' %}">
+            <a id="link-timer" class="tile d-block text-center p-4" href="{% if not user.is_authenticated and has_demo %}{% url 'demo' %}{% else %}{% url 'competitions' %}{% endif %}">
                 <div class="tile-icon mb-2"><i class="bi bi-trophy"></i></div>
                 <h3 class="tile-title">Shoot Timer</h3>
                 <p class="tile-text">Simple, bold timer optimized for ranges and displays.</p>
