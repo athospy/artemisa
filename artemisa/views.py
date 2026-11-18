@@ -6,10 +6,10 @@ from collections import defaultdict
 from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import IntegrityError
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.db.models import Sum, Case, When, Value, IntegerField, OuterRef, Subquery, F
 from django.db.models.functions import Coalesce, Cast
-from django.contrib.auth import login
+from django.contrib.auth.views import redirect_to_login
 import anthropic
 
 from .models import Competition
@@ -17,7 +17,7 @@ from .models import Registration
 from .models import Category
 from .models import Archer
 from .models import Score
-from .forms import RegisterForm, CompetitionForm, CategoryForm, ArcherForm, RegistrationForm
+from .forms import CompetitionForm, CategoryForm, ArcherForm, RegistrationForm
 
 @ensure_csrf_cookie
 def index(request):
@@ -27,20 +27,28 @@ def index(request):
         'archers_count': Archer.objects.count(),
         'registrations_count': Registration.objects.count(),
         'scores_count': Score.objects.count(),
+        'has_demo': Competition.objects.filter(is_demo=True).exists(),
     }
     return render(request, "home.html", stats)
 
 
-def register(request):
-    if request.method == 'POST':
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('competitions')
-    else:
-        form = RegisterForm()
-    return render(request, 'registration/register.html', {'form': form})
+def _can_view(request, competition):
+    """Logged-in users see every competition; visitors only see the demo one."""
+    return request.user.is_authenticated or competition.is_demo
+
+
+@ensure_csrf_cookie
+def demo(request):
+    """Public landing page for the demo tournament (read-only: results and timer).
+    Unlike select_competition it does not touch the session, so it never changes
+    which competition a logged-in scorer is saving scores into."""
+    competition = Competition.objects.filter(is_demo=True).order_by('-event_date').first()
+    if competition is None:
+        raise Http404("No demo competition. Run: python manage.py seed_demo")
+    return render(request, "competition.html", {
+        'competition': competition,
+        'read_only': True,
+    })
 
 
 @login_required
@@ -191,10 +199,11 @@ def save_score_db(request):
 
     return JsonResponse({"message": "Score saved successfully."}, status=201)
 
-@login_required
 @ensure_csrf_cookie
 def result_screen(request, competition_id):
     competition = get_object_or_404(Competition, pk=competition_id)
+    if not _can_view(request, competition):
+        return redirect_to_login(request.get_full_path())
     registrations_categories = Registration.objects.filter(competition=competition).values('category').distinct()
     categories = Category.objects.filter(id__in=registrations_categories)
 
@@ -203,11 +212,19 @@ def result_screen(request, competition_id):
         'categories': categories,
     })
 
-@login_required
 def result_category(request):
     data = json.loads(request.body)
-    competition_json = json.loads(request.session['current_competition'])
-    competition_id = competition_json['id']
+    # The results page sends its own competition_id. The session fallback keeps
+    # older pages working; it used to be the only source, which showed the wrong
+    # leaderboard when the session pointed at a different competition.
+    competition_id = data.get('competition_id')
+    if competition_id is None and request.session.get('current_competition'):
+        competition_id = json.loads(request.session['current_competition'])['id']
+    if not str(competition_id).isdigit():
+        return JsonResponse({"error": "A numeric competition_id is required"}, status=400)
+    competition = get_object_or_404(Competition, pk=int(competition_id))
+    if not _can_view(request, competition):
+        return JsonResponse({"error": "Login required"}, status=403)
     category_id = data['category_id']
 
     # Expression for summing scores via Registration -> Score reverse relation
@@ -279,10 +296,11 @@ def result_category(request):
     return JsonResponse({"data": json.dumps(archer_list)}, status=200)
 
 
-@login_required
 @ensure_csrf_cookie
 def shoot_timer(request, competition_id):
     competition = get_object_or_404(Competition, pk=competition_id)
+    if not _can_view(request, competition):
+        return redirect_to_login(request.get_full_path())
 
     return render(request, "shoot_timer.html",{
         'competition': competition,

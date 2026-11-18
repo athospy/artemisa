@@ -17,6 +17,9 @@ class Competition(models.Model):
     event_date = models.DateTimeField()
     location = models.CharField(max_length=200)
     code = models.CharField(max_length=100)
+    # A demo competition's results and timer are visible without logging in.
+    # Real events stay private. See `python manage.py seed_demo`.
+    is_demo = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
