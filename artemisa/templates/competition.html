@@ -8,7 +8,7 @@
     <div class="container">
         <p class="display-4">{{competition.name}}</p>
         {% if read_only %}
-            <p class="lead">Live demo tournament &mdash; made-up archers, real scoring engine. Open the results screen or the shoot timer below.</p>
+            <p class="lead">Live demo tournament &mdash; made-up archers, real scoring engine. Open the results screen, the shoot timer or the AI match recap below.</p>
         {% endif %}
         <div>
             <h1 class="mb-4">code: {{ competition.code }}</h1>
@@ -50,13 +50,11 @@
                 <button type="button" class="btn btn-primary btn-lg">Scores screen</button>
             </a>
         </div>
-{% if not read_only %}
         <div class='col-lg-4 col-sm-12 d-flex justify-content-center align-items-center' style='padding: 4%'>
             <a href="{% url 'match_recap' competition_id=competition.id %}">
                 <button type="button" class="btn btn-primary btn-lg">AI match recap</button>
             </a>
         </div>
-        {% endif %}
 
     </div>
 

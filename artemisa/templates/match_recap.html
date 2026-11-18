@@ -9,15 +9,29 @@
     <div class="container">
         <p class="display-4 text-center">Match Recap</p>
         <p class="text-center">{{ competition.name }}</p>
-        <p class="text-center">
-            <button id="generate_recap_btn" type="button" class="btn btn-primary btn-lg" data-competition_id="{{ competition.id }}">Generate AI recap</button>
-        </p>
+        {% if user.is_authenticated and has_scores and not saved_recap %}
+            <p class="text-center">
+                <button id="generate_recap_btn" type="button" class="btn btn-primary btn-lg" data-competition_id="{{ competition.id }}">Generate AI recap</button>
+            </p>
+        {% endif %}
     </div>
 </div>
 
 <div class="container mb-5">
-    <p id="recap_status" class="text-muted"></p>
-    <p id="recap_text" style="white-space: pre-line;"></p>
+    <p id="recap_status" class="text-muted">
+        {% if not has_scores %}
+            No scores recorded yet for this competition.
+        {% elif not saved_recap and not user.is_authenticated %}
+            No AI recap has been written for these results yet.
+        {% endif %}
+    </p>
+    <p id="recap_text" style="white-space: pre-line;">{{ saved_recap }}</p>
+    {% if has_scores %}
+        <p class="text-muted small">
+            Written by Claude from this competition's final standings, and saved: it is only
+            rewritten when the scores change.
+        </p>
+    {% endif %}
 </div>
 
 {% endblock %}

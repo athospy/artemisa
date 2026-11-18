@@ -10,14 +10,17 @@ from django.http import JsonResponse, Http404
 from django.db.models import Sum, Case, When, Value, IntegerField, OuterRef, Subquery, F
 from django.db.models.functions import Coalesce, Cast
 from django.contrib.auth.views import redirect_to_login
-import anthropic
+import logging
 
 from .models import Competition
 from .models import Registration
 from .models import Category
 from .models import Archer
 from .models import Score
+from . import recap
 from .forms import CompetitionForm, CategoryForm, ArcherForm, RegistrationForm
+
+logger = logging.getLogger(__name__)
 
 @ensure_csrf_cookie
 def index(request):
@@ -307,90 +310,47 @@ def shoot_timer(request, competition_id):
     })
 
 
-def _get_competition_standings(competition):
-    """Final standings per category for a competition, using the same scoring
-    and tiebreaker rules as result_category (X=10+tiebreaker, M=0)."""
-    registered_category_ids = Registration.objects.filter(competition=competition).values('category').distinct()
-    categories = Category.objects.filter(id__in=registered_category_ids)
-
-    score_value_case = Case(
-        When(score__score='X', then=Value(10)),
-        When(score__score='M', then=Value(0)),
-        default=Cast(F('score__score'), IntegerField()),
-        output_field=IntegerField(),
-    )
-
-    standings = []
-    for category in categories:
-        registrations = (
-            Registration.objects.filter(competition=competition, category=category)
-            .select_related('archer')
-            .annotate(
-                total_score=Coalesce(Sum(score_value_case), Value(0)),
-                tens_count=Coalesce(
-                    Sum(Case(When(score__score__in=['10', 'X'], then=Value(1)), default=Value(0), output_field=IntegerField())),
-                    Value(0),
-                ),
-                xs_count=Coalesce(
-                    Sum(Case(When(score__score='X', then=Value(1)), default=Value(0), output_field=IntegerField())),
-                    Value(0),
-                ),
-            )
-            .order_by('-total_score', '-tens_count', '-xs_count')
-        )
-        standings.append({
-            'category': category.name,
-            'archers': [
-                {'name': r.archer.name, 'score': r.total_score, 'tens': r.tens_count, 'xs': r.xs_count}
-                for r in registrations
-            ],
-        })
-    return standings
-
-
-@login_required
 @ensure_csrf_cookie
 def match_recap(request, competition_id):
     competition = get_object_or_404(Competition, pk=competition_id)
-    return render(request, "match_recap.html", {"competition": competition})
+    if not _can_view(request, competition):
+        return redirect_to_login(request.get_full_path())
+    current_input = recap.recap_input(competition)
+    return render(request, "match_recap.html", {
+        "competition": competition,
+        "saved_recap": recap.saved_recap(competition, current_input),
+        "has_scores": current_input is not None,
+    })
 
 
-@login_required
 def generate_match_recap(request, competition_id):
+    """Return the competition's AI recap. A saved recap is reused while the standings
+    are unchanged, so Claude is only called when there is something new to write
+    about, and only for logged-in users (visitors never trigger an API call)."""
     competition = get_object_or_404(Competition, pk=competition_id)
-    standings = _get_competition_standings(competition)
+    if not _can_view(request, competition):
+        return JsonResponse({"error": "Login required"}, status=403)
 
-    if not any(category['archers'] for category in standings):
+    current_input = recap.recap_input(competition)
+    if current_input is None:
         return JsonResponse({"error": "No scores recorded yet for this competition."}, status=400)
 
-    standings_text = "\n".join(
-        f"{category['category']}: " + ", ".join(
-            f"{archer['name']} ({archer['score']} pts, {archer['tens']} tens, {archer['xs']} Xs)"
-            for archer in category['archers']
-        )
-        for category in standings
-    )
+    saved = recap.saved_recap(competition, current_input)
+    if saved:
+        return JsonResponse({"recap": saved})
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "No AI recap has been written for these results yet."}, status=404)
 
     try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model="claude-opus-4-8",
-            max_tokens=1024,
-            system=(
-                "You are a sports commentator writing a short, energetic recap of an archery "
-                "tournament for spectators. Highlight the category leaders, standout scores "
-                "(many 10s/Xs), and close finishes. Keep it to 2-3 short paragraphs. Only use "
-                "facts present in the standings below."
-            ),
-            messages=[{
-                "role": "user",
-                "content": f"Competition: {competition.name}\n\nFinal standings by category:\n{standings_text}",
-            }],
-        )
+        recap_text = recap.generate_recap(current_input)
     except Exception:
+        # Runs live during a tournament: never let an API problem break the page.
+        logger.exception("AI match recap failed for competition %s", competition.id)
         return JsonResponse({"error": "Could not generate the recap right now. Please try again."}, status=502)
 
-    recap_text = next((block.text for block in response.content if block.type == "text"), "")
+    competition.ai_recap = recap_text
+    competition.ai_recap_input = current_input
+    competition.save(update_fields=["ai_recap", "ai_recap_input", "updated_at"])
     return JsonResponse({"recap": recap_text})
 
 
