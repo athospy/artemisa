@@ -7,8 +7,6 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import IntegrityError
 from django.http import JsonResponse, Http404
-from django.db.models import Sum, Case, When, Value, IntegerField, OuterRef, Subquery, F
-from django.db.models.functions import Coalesce, Cast
 from django.contrib.auth.views import redirect_to_login
 import logging
 
@@ -17,7 +15,7 @@ from .models import Registration
 from .models import Category
 from .models import Archer
 from .models import Score
-from . import recap
+from . import recap, standings
 from .forms import CompetitionForm, CategoryForm, ArcherForm, RegistrationForm
 
 logger = logging.getLogger(__name__)
@@ -228,74 +226,12 @@ def result_category(request):
     competition = get_object_or_404(Competition, pk=int(competition_id))
     if not _can_view(request, competition):
         return JsonResponse({"error": "Login required"}, status=403)
-    category_id = data['category_id']
-
-    # Expression for summing scores via Registration -> Score reverse relation
-    score_value_case_reg = Case(
-        When(score__score='X', then=Value(10)),
-        When(score__score='M', then=Value(0)),
-        default=Cast(F('score__score'), IntegerField()),
-        output_field=IntegerField(),
-    )
-
-    # Expression for computing last end total inside a Score subquery
-    score_value_case_score = Case(
-        When(score='X', then=Value(10)),
-        When(score='M', then=Value(0)),
-        default=Cast('score', IntegerField()),
-        output_field=IntegerField(),
-    )
-
-    registrations = (
-        Registration.objects.filter(competition_id=competition_id, category_id=category_id)
-        .select_related('archer')
-        .annotate(
-            total_score=Coalesce(Sum(score_value_case_reg), Value(0)),
-            tens_count=Coalesce(
-                Sum(
-                    Case(
-                        When(score__score__in=['10', 'X'], then=Value(1)),
-                        default=Value(0),
-                        output_field=IntegerField(),
-                    )
-                ),
-                Value(0),
-            ),
-            xs_count=Coalesce(
-                Sum(
-                    Case(
-                        When(score__score='X', then=Value(1)),
-                        default=Value(0),
-                        output_field=IntegerField(),
-                    )
-                ),
-                Value(0),
-            ),
-            last_end_total=Coalesce(
-                Subquery(
-                    Score.objects.filter(registration=OuterRef('pk'))
-                    .values('end_number')
-                    .annotate(end_total=Sum(score_value_case_score))
-                    .order_by('-end_number')
-                    .values('end_total')[:1]
-                ),
-                Value(0),
-            ),
-        )
-        .order_by('-total_score', '-tens_count', '-xs_count', '-last_end_total')
-    )
-
+    ranking = standings.category_ranking(competition.id, data['category_id'])
+    # Same fields the results screen has always received.
     archer_list = [
-        {
-            'name': registration.archer.name,
-            'score': registration.total_score,
-            'tens': registration.tens_count,
-            'xs': registration.xs_count,
-            'last_end_total': registration.last_end_total,
-        }
-        for registration in registrations
+        {key: archer[key] for key in ('name', 'score', 'tens', 'xs', 'last_end_total')}
+        for archer in ranking
     ]
-
     return JsonResponse({"data": json.dumps(archer_list)}, status=200)
 
 
