@@ -1100,7 +1100,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'artemisa',
         'USER': 'artemisa',
-        'PASSWORD': 'REDACTED',  # ← Exposed
+        'PASSWORD': 'REDACTED',  # ← a real value was committed here once; removed from history 2026-11-14
         'HOST': 'localhost',
         'PORT': '',
     }
