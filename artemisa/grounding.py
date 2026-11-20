@@ -69,7 +69,7 @@ def grounding_issues(recap_text, prompt_input):
     }
     for first, second in CAPITALIZED_PAIR.findall(recap_text):
         if first[0].isupper() and second[0].isupper():
-            word = re.sub(r"['’]s$", "", second).lower()
+            word = re.sub(r"['’]s?$", "", second).lower()  # possessives: "Ana's", "Rivas'"
             if word not in vocabulary:
                 issues.append(f"name not in the standings: {first} {second}")
 

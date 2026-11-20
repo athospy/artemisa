@@ -5,6 +5,10 @@
 Uses the demo competition unless --competition is given. Each run is a real Claude call
 (needs an API key and costs money), so N is small. The result is the share of recaps
 whose every number and name is found in the standings (see artemisa/grounding.py).
+
+After changing the checker, score saved recaps again without new API calls:
+
+    python manage.py eval_recap --rescore evals/recap_grounding.json
 """
 import json
 from pathlib import Path
@@ -24,8 +28,11 @@ class Command(BaseCommand):
         parser.add_argument("--runs", type=int, default=5, help="How many recaps to generate (each is a paid API call).")
         parser.add_argument("--competition", type=int, help="Competition id (default: the demo competition).")
         parser.add_argument("--out", help="Write the full results (every recap and issue) to this JSON file.")
+        parser.add_argument("--rescore", help="Re-check the recaps saved in this results file (no API calls) and update it.")
 
-    def handle(self, *args, runs, competition, out, **options):
+    def handle(self, *args, runs, competition, out, rescore, **options):
+        if rescore:
+            return self.rescore(Path(rescore))
         if competition:
             target = Competition.objects.filter(pk=competition).first()
         else:
@@ -67,3 +74,15 @@ class Command(BaseCommand):
             path.write_text(json.dumps({**summary, "input": prompt_input, "results": results},
                                        indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             self.stdout.write(f"Results written to {path}")
+
+    def rescore(self, path):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for result in data["results"]:
+            if result["recap"] is not None:
+                result["issues"] = grounding_issues(result["recap"], data["input"])
+                self.stdout.write(f"run {result['run']}: {'PASS' if not result['issues'] else 'FAIL ' + '; '.join(result['issues'])}")
+        completed = [r for r in data["results"] if r["recap"] is not None]
+        data["grounded"] = sum(1 for r in completed if not r["issues"])
+        data["rescored_at"] = timezone.now().isoformat(timespec="seconds")
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        self.stdout.write(self.style.SUCCESS(f"{data['grounded']}/{len(completed)} recaps grounded (rescored {path})"))

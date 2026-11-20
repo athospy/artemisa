@@ -337,6 +337,13 @@ To measure it on real generations (each run is a paid API call):
 python manage.py eval_recap --runs 10 --out evals/recap_grounding.json
 ```
 
+**Latest result (2026-11-20, `claude-opus-5-5`, demo tournament): 10/10 recaps grounded.**
+The first scoring was 9/10. The one failure was a bug in the checker, not the model: a
+possessive name ("Tomás Rivas' 302") wasn't recognised. After fixing it, the saved recaps
+were scored again without new API calls (`eval_recap --rescore`). Superlative claims the
+checker can't verify ("most Xs in the competition") were checked by hand in all 10 and
+were correct. Every recap is in [`evals/recap_grounding.json`](evals/recap_grounding.json).
+
 Recaps are saved with the exact standings they were written from and reused until the
 scores change, so visitors never trigger an API call.
 

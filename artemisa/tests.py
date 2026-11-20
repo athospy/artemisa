@@ -394,6 +394,10 @@ class GroundingCheckTests(TestCase):
                 "Ana's 4 Xs stood out.")
         self.assertEqual(grounding_issues(text, self.INPUT), [])
 
+    def test_accepts_possessives(self):
+        # Found by the first real eval run: "Abril Sosa' 290" was flagged as an unknown name.
+        self.assertEqual(grounding_issues("Ana Ruiz's 297 beat Abril Sosa' 290.", self.INPUT), [])
+
     def test_flags_an_invented_number(self):
         self.assertEqual(grounding_issues("Ana Ruiz shot 299.", self.INPUT),
                          ["number not in the standings: 299"])
