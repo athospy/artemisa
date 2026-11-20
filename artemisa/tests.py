@@ -1,3 +1,4 @@
+import io
 import json
 from types import SimpleNamespace
 from unittest import mock
@@ -5,6 +6,7 @@ from unittest import mock
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -12,6 +14,8 @@ from django.utils import timezone
 from mcp.server.mcpserver.exceptions import ToolError
 
 from . import mcp_tools, recap
+from .grounding import grounding_issues
+from .management.commands.seed_demo import DEMO_RECAP_FILE
 from .management.commands.mcp import build_server
 from .models import Archer, Category, Competition, Registration, Score, validate_score
 
@@ -373,3 +377,67 @@ class McpToolsTests(TestCase):
         self.assertEqual(sorted(t.name for t in tools),
                          ["get_archer_scorecard", "get_leaderboard", "get_match_recap", "list_competitions"])
         self.assertTrue(all(t.annotations.read_only_hint for t in tools))
+
+
+class GroundingCheckTests(TestCase):
+    """The AI recap may only state facts that are in its input."""
+
+    INPUT = (
+        "Competition: Spring Open 2026\n\nFinal standings by category:\n"
+        "Recurve Bow Women: Ana Ruiz (297 pts, 5 tens, 4 Xs), Abril Sosa (290 pts, 2 tens, 1 Xs)\n"
+        "Compound Bow Men: Carlos Paz (310 pts, 9 tens, 3 Xs)"
+    )
+
+    def test_accepts_facts_margins_and_names_from_the_input(self):
+        text = ("What a Spring Open 2026! Ana Ruiz won Recurve Bow Women with 297 points and 5 tens, "
+                "7 points clear of Abril Sosa. Carlos Paz's 310 topped Compound Bow Men. In Recurve, "
+                "Ana's 4 Xs stood out.")
+        self.assertEqual(grounding_issues(text, self.INPUT), [])
+
+    def test_flags_an_invented_number(self):
+        self.assertEqual(grounding_issues("Ana Ruiz shot 299.", self.INPUT),
+                         ["number not in the standings: 299"])
+
+    def test_flags_an_invented_archer(self):
+        self.assertEqual(grounding_issues("Juan Gómez was close behind.", self.INPUT),
+                         ["name not in the standings: Juan Gómez"])
+
+    def test_committed_demo_recap_is_grounded(self):
+        saved = json.loads(DEMO_RECAP_FILE.read_text(encoding="utf-8"))
+        self.assertEqual(grounding_issues(saved["recap"], saved["input"]), [])
+
+    @mock.patch("artemisa.recap.anthropic.Anthropic")
+    def test_seed_demo_refuses_an_ungrounded_recap(self, client_class):
+        client_class.return_value.beta.messages.create.return_value = fake_claude_response("Someone shot 999.")
+        before = DEMO_RECAP_FILE.read_text(encoding="utf-8")
+        with self.assertRaisesMessage(CommandError, "failed the grounding check"):
+            call_command("seed_demo", "--refresh-recap", stdout=open("/dev/null", "w"))
+        self.assertEqual(DEMO_RECAP_FILE.read_text(encoding="utf-8"), before)
+
+    @mock.patch("artemisa.recap.anthropic.Anthropic")
+    def test_live_generation_logs_an_ungrounded_recap_but_keeps_it(self, client_class):
+        client_class.return_value.beta.messages.create.return_value = fake_claude_response("Ana shot 999.")
+        category = Category.objects.create(name="Recurve Bow Women", code="RW")
+        event = make_competition("Event")
+        register_with_arrows(event, category, "Ana Ruiz", ["9"] * 6)
+        self.client.force_login(User.objects.create_user("u", password="test-pass-123"))
+        with self.assertLogs("artemisa.views", level="WARNING") as logs:
+            response = self.client.post(reverse("generate_match_recap", args=[event.id]))
+        self.assertEqual(response.json(), {"recap": "Ana shot 999."})
+        self.assertIn("number not in the standings: 999", logs.output[0])
+
+
+@mock.patch("artemisa.recap.anthropic.Anthropic")
+class EvalRecapCommandTests(TestCase):
+    def test_reports_how_many_recaps_are_grounded(self, client_class):
+        call_command("seed_demo", stdout=open("/dev/null", "w"))
+        saved = json.loads(DEMO_RECAP_FILE.read_text(encoding="utf-8"))
+        client_class.return_value.beta.messages.create.side_effect = [
+            fake_claude_response(saved["recap"]),            # grounded
+            fake_claude_response("Someone shot 999."),       # invented score
+            RuntimeError("network down"),                   # failed call
+        ]
+        out = io.StringIO()
+        call_command("eval_recap", "--runs", "3", stdout=out)
+        self.assertIn("run 2: FAIL number not in the standings: 999", out.getvalue())
+        self.assertIn("1/2 recaps grounded", out.getvalue())

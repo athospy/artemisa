@@ -17,11 +17,12 @@ import json
 import random
 from pathlib import Path
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
 from artemisa import recap
+from artemisa.grounding import grounding_issues
 from artemisa.models import Archer, Category, Competition, Registration, Score
 
 DEMO_RECAP_FILE = Path(__file__).with_name("demo_recap.json")
@@ -154,11 +155,16 @@ class Command(BaseCommand):
         with --refresh-recap, from a new Claude call (which also rewrites the file)."""
         current_input = recap.recap_input(competition)
         if refresh:
+            text = recap.generate_recap(current_input)
+            issues = grounding_issues(text, current_input)
+            if issues:
+                # The demo recap is public: only keep one that passes the grounding check.
+                raise CommandError("New recap failed the grounding check, file not changed:\n  " + "\n  ".join(issues))
             saved = {
                 "model": recap.RECAP_MODEL,
                 "generated_at": timezone.now().isoformat(timespec="seconds"),
                 "input": current_input,
-                "recap": recap.generate_recap(current_input),
+                "recap": text,
             }
             DEMO_RECAP_FILE.write_text(json.dumps(saved, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             self.stdout.write(f"New demo recap written to {DEMO_RECAP_FILE.name}.")
