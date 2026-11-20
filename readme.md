@@ -320,6 +320,42 @@ git commit -m "Home redesign, favicon, results fix, timer stages, score restore"
 git push origin main
 ```
 
+## Use it from Claude (MCP server)
+
+Artemisa ships a small, read-only [MCP](https://modelcontextprotocol.io) server, so Claude
+Desktop or Claude Code can answer questions about your tournaments ("who is leading
+Recurve Bow Women?", "show me Lucía's scorecard"). It runs locally over stdio and reads the
+database your `.env` points at. No tool writes data, returns archer emails, or calls the
+Anthropic API.
+
+| Tool | What it returns |
+|---|---|
+| `list_competitions` | Competitions with ids, dates, categories and archer counts |
+| `get_leaderboard` | Ranked archers (score, 10s, Xs, last end) for one category or all |
+| `get_archer_scorecard` | One archer's arrows end by end, running total and rank |
+| `get_match_recap` | The saved AI recap, if it matches the current standings |
+
+Try it on the demo tournament: `python manage.py seed_demo`.
+
+**Claude Code** (from the repo folder):
+
+```bash
+claude mcp add artemisa -- "$PWD/venv/bin/python" "$PWD/manage.py" mcp
+```
+
+**Claude Desktop** (`claude_desktop_config.json`, use absolute paths):
+
+```json
+{
+  "mcpServers": {
+    "artemisa": {
+      "command": "/path/to/artemisa/venv/bin/python",
+      "args": ["/path/to/artemisa/manage.py", "mcp"]
+    }
+  }
+}
+```
+
 ## Usage
 
 ### Archer Management

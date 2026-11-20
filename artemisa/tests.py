@@ -2,13 +2,17 @@ import json
 from types import SimpleNamespace
 from unittest import mock
 
+from asgiref.sync import async_to_sync
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from . import recap
+from mcp.server.mcpserver.exceptions import ToolError
+
+from . import mcp_tools, recap
+from .management.commands.mcp import build_server
 from .models import Archer, Category, Competition, Registration, Score, validate_score
 
 
@@ -296,3 +300,76 @@ class SeedDemoTests(TestCase):
         first, second = json.loads(response.json()["data"])[:2]
         self.assertEqual(first["score"], second["score"])
         self.assertGreater(first["tens"], second["tens"])
+
+
+class McpToolsTests(TestCase):
+    """The read-only tools behind `manage.py mcp` (called directly, no MCP client)."""
+
+    def setUp(self):
+        self.recurve = Category.objects.create(name="Recurve Bow Women", code="RW")
+        self.compound = Category.objects.create(name="Compound Bow Men", code="CM")
+        self.event = make_competition("Spring Open")
+        # Tie on 50 points and on last end; Ana wins on 10s (5 vs 2) even though
+        # "Abril" sorts first by name, so the test fails if the 10s tiebreak is lost.
+        self.ana = register_with_arrows(self.event, self.recurve, "Ana Ruiz", ["10", "X", "10", "M", "10", "10"])
+        register_with_arrows(self.event, self.recurve, "Abril Sosa", ["10", "10", "9", "9", "6", "6"])
+        register_with_arrows(self.event, self.compound, "Carlos Paz", ["9"] * 6 + ["8"] * 6)
+
+    def test_list_competitions_has_categories_and_no_emails(self):
+        [competition] = mcp_tools.list_competitions()
+        self.assertEqual(competition["name"], "Spring Open")
+        self.assertEqual(competition["categories"], [
+            {"name": "Compound Bow Men", "code": "CM", "archers": 1},
+            {"name": "Recurve Bow Women", "code": "RW", "archers": 2},
+        ])
+        self.assertNotIn("@", json.dumps(mcp_tools.list_competitions()))
+
+    def test_leaderboard_uses_the_tiebreaker_and_matches_the_results_screen(self):
+        board = mcp_tools.get_leaderboard(self.event.id, "rw")
+        ranking = board["categories"][0]["ranking"]
+        self.assertEqual([(r["rank"], r["name"], r["score"], r["tens"]) for r in ranking],
+                         [(1, "Ana Ruiz", 50, 5), (2, "Abril Sosa", 50, 2)])
+        self.client.force_login(User.objects.create_user("u", password="test-pass-123"))
+        screen = self.client.post(reverse("result_category"),
+                                  json.dumps({"competition_id": self.event.id, "category_id": self.recurve.id}),
+                                  content_type="application/json")
+        self.assertEqual([a["name"] for a in json.loads(screen.json()["data"])], ["Ana Ruiz", "Abril Sosa"])
+
+    def test_leaderboard_without_category_returns_all(self):
+        board = mcp_tools.get_leaderboard(self.event.id)
+        self.assertEqual([c["code"] for c in board["categories"]], ["CM", "RW"])
+
+    def test_scorecard_has_ends_and_running_totals(self):
+        card = mcp_tools.get_archer_scorecard(self.event.id, "carlos")
+        [scorecard] = card["scorecards"]
+        self.assertEqual(scorecard["ends"], [
+            {"end": 1, "arrows": ["9"] * 6, "end_total": 54, "running_total": 54},
+            {"end": 2, "arrows": ["8"] * 6, "end_total": 48, "running_total": 102},
+        ])
+        self.assertEqual((scorecard["rank"], scorecard["of"], scorecard["total"]), (1, 1, 102))
+
+    def test_errors_are_messages_for_the_model(self):
+        cases = [
+            (lambda: mcp_tools.get_leaderboard(9999), "No competition with id 9999"),
+            (lambda: mcp_tools.get_leaderboard(self.event.id, "longbow"), "No category 'longbow'"),
+            (lambda: mcp_tools.get_archer_scorecard(self.event.id, "zoe"), "No archer matching 'zoe'"),
+            (lambda: mcp_tools.get_archer_scorecard(self.event.id, "s"), "matches several archers"),
+        ]
+        for call, message in cases:
+            with self.assertRaisesMessage(ToolError, message):
+                call()
+
+    def test_match_recap_never_calls_the_api(self):
+        with mock.patch("artemisa.recap.anthropic.Anthropic") as client_class:
+            self.assertIsNone(mcp_tools.get_match_recap(self.event.id)["recap"])
+            self.event.ai_recap = "Saved."
+            self.event.ai_recap_input = recap.recap_input(self.event)
+            self.event.save()
+            self.assertEqual(mcp_tools.get_match_recap(self.event.id)["recap"], "Saved.")
+            client_class.assert_not_called()
+
+    def test_server_exposes_four_read_only_tools(self):
+        tools = async_to_sync(build_server().list_tools)()
+        self.assertEqual(sorted(t.name for t in tools),
+                         ["get_archer_scorecard", "get_leaderboard", "get_match_recap", "list_competitions"])
+        self.assertTrue(all(t.annotations.read_only_hint for t in tools))
