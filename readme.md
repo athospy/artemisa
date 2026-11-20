@@ -75,7 +75,9 @@ flowchart LR
 
 ## Run it locally
 
-Needs Python 3.10+ and Docker.
+Needs Python 3.10+ and Docker. Check `python3 --version` first: the `python3` that ships
+with macOS can be older, in which case create the venv with a newer one (for example
+`python3.12 -m venv venv`).
 
 ```bash
 git clone https://github.com/athospy/artemisa.git
