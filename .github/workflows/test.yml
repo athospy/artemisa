@@ -48,5 +48,8 @@ jobs:
       - name: Django system check
         run: python manage.py check
 
+      - name: No model change without a migration
+        run: python manage.py makemigrations --check --dry-run
+
       - name: Run tests
         run: python manage.py test artemisa -v 2

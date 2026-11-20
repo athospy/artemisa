@@ -33,3 +33,6 @@ node_modules/
 *.zip
 dump-*.sql
 dump-artemisa-*.tar
+
+# Private project notes (not for public repo)
+internal-docs/

@@ -6,6 +6,7 @@ from unittest import mock
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.db import IntegrityError, transaction
 from django.core.management.base import CommandError
 from django.test import TestCase
 from django.urls import reverse
@@ -445,3 +446,21 @@ class EvalRecapCommandTests(TestCase):
         call_command("eval_recap", "--runs", "3", stdout=out)
         self.assertIn("run 2: FAIL number not in the standings: 999", out.getvalue())
         self.assertIn("1/2 recaps grounded", out.getvalue())
+
+
+class DatabaseConstraintTests(TestCase):
+    """Migration 0007: the database itself rejects duplicates, not only the forms."""
+
+    def setUp(self):
+        self.category = Category.objects.create(name="Recurve Bow Women", code="RW")
+        self.competition = make_competition("Event")
+        self.registration = register_with_arrows(self.competition, self.category, "Ana Ruiz", ["9"])
+
+    def test_one_score_per_arrow(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Score.objects.create(registration=self.registration, end_number=1, shoot_number=1, score="10")
+
+    def test_one_registration_per_archer_category_and_competition(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Registration.objects.create(competition=self.competition, category=self.category,
+                                        archer=self.registration.archer)
