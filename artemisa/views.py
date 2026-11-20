@@ -16,6 +16,7 @@ from .models import Category
 from .models import Archer
 from .models import Score
 from . import recap, standings
+from .grounding import grounding_issues
 from .forms import CompetitionForm, CategoryForm, ArcherForm, RegistrationForm
 
 logger = logging.getLogger(__name__)
@@ -283,6 +284,11 @@ def generate_match_recap(request, competition_id):
         # Runs live during a tournament: never let an API problem break the page.
         logger.exception("AI match recap failed for competition %s", competition.id)
         return JsonResponse({"error": "Could not generate the recap right now. Please try again."}, status=502)
+
+    issues = grounding_issues(recap_text, current_input)
+    if issues:
+        # Kept (a live event shouldn't lose its recap), but worth a human look.
+        logger.warning("AI recap for competition %s failed the grounding check: %s", competition.id, issues)
 
     competition.ai_recap = recap_text
     competition.ai_recap_input = current_input

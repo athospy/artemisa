@@ -1,0 +1,72 @@
+{
+  "model": "claude-opus-5-5",
+  "competition": "Artemisa Demo Open",
+  "ran_at": "2026-11-20T01:29:52+00:00",
+  "runs": 10,
+  "completed": 10,
+  "grounded": 10,
+  "input": "Competition: Artemisa Demo Open\n\nFinal standings by category:\nCompound Bow Men: Mateo Benítez (323 pts, 16 tens, 2 Xs), Lucas Ferreira (310 pts, 8 tens, 2 Xs), Diego Acosta (303 pts, 7 tens, 3 Xs), Tomás Rivas (302 pts, 7 tens, 4 Xs)\nCompound Bow Women: Camila Duarte (318 pts, 14 tens, 4 Xs), Valentina Ortiz (318 pts, 11 tens, 5 Xs), Sofía Giménez (309 pts, 10 tens, 6 Xs), Martina López (280 pts, 5 tens, 3 Xs)\nRecurve Bow Men: Nicolás Vera (299 pts, 5 tens, 2 Xs), Gabriel Ramírez (294 pts, 6 tens, 1 Xs), Joaquín Martínez (289 pts, 5 tens, 3 Xs), Andrés Cabrera (266 pts, 0 tens, 0 Xs)\nRecurve Bow Women: Lucía Fernández (297 pts, 5 tens, 4 Xs), Isabella Romero (297 pts, 4 tens, 3 Xs), Paula Sanabria (283 pts, 3 tens, 0 Xs), Elena Torres (257 pts, 1 tens, 1 Xs)",
+  "results": [
+    {
+      "run": 1,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez put on a clinic in Compound Bow Men, topping the field with 323 points, the highest total of the tournament, and a jaw-dropping 16 tens. Lucas Ferreira took second with 310, but the real drama came further down: Diego Acosta held off Tomás Rivas by a single point, 303 to 302, even as Rivas fired 4 Xs, the most in that group.\n\nCompound Bow Women was a nail-biter from start to finish. Camila Duarte and Valentina Ortiz finished dead level on 318 points, with Duarte taking the top spot on the strength of 14 tens to Ortiz's 11, while Ortiz answered with 5 Xs. Sofía Giménez claimed third on 309 and hit 6 Xs, the most of any archer in the competition. Martina López rounded out the category with 280.\n\nThe recurve lines delivered tension too. Nicolás Vera led Recurve Bow Men with 299 points, ahead of Gabriel Ramírez (294) and Joaquín Martínez (289), with Andrés Cabrera on 266. In Recurve Bow Women, Lucía Fernández and Isabella Romero both posted 297, and Fernández edged to the front with 5 tens and 4 Xs. Paula Sanabria (283) and Elena Torres (257) completed a thrilling field. Congratulations to every archer!"
+    },
+    {
+      "run": 2,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez was in a class of his own in Compound Bow Men, firing a tournament-high 323 points with a blistering 16 tens to take the top spot by 13 points over Lucas Ferreira (310). Behind them, the race for third came down to a single point, with Diego Acosta (303) just holding off Tomás Rivas (302), even though Rivas drilled 4 Xs.\n\nCompound Bow Women delivered the drama of the day. Camila Duarte and Valentina Ortiz finished dead level on 318 points, with Duarte ranked first on the strength of 14 tens to Ortiz's 11. Ortiz still had 5 Xs to show for her effort, and Sofía Giménez (309) found the X a remarkable 6 times to claim third.\n\nOver in recurve, Nicolás Vera led Recurve Bow Men with 299 points, five clear of Gabriel Ramírez (294), while Joaquín Martínez took third with 289. Recurve Bow Women was another nail-biter: Lucía Fernández and Isabella Romero both posted 297, with Fernández listed on top, backed by 5 tens and 4 Xs. Paula Sanabria rounded out the podium with 283. Two ties at the top and a one-point battle for bronze made this a memorable tournament!"
+    },
+    {
+      "run": 3,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez owned the Compound Bow Men's field with 323 points, the highest total of the tournament, powered by a sizzling 16 tens and 2 Xs. Lucas Ferreira took second with 310. The fight for third was razor-thin: Diego Acosta finished on 303, just one point ahead of Tomás Rivas on 302, even though Rivas fired 4 Xs to Acosta's 3.\n\nThe Compound Bow Women delivered the drama of the day. Camila Duarte and Valentina Ortiz both finished on 318 points. Duarte topped the standings with 14 tens to Ortiz's 11, while Ortiz answered with 5 Xs. Sofía Giménez was right behind on 309 and posted 6 Xs, the most of any archer in the competition. Martina López rounded out the field with 280.\n\nOn the recurve side, Nicolás Vera led the men with 299 points, holding off Gabriel Ramírez (294), who hit the most tens in the category with 6. Joaquín Martínez followed on 289 with 3 Xs. The Recurve Bow Women produced another dead heat at the top. Lucía Fernández and Isabella Romero each scored 297, with Fernández's 5 tens and 4 Xs putting her first in the standings. Paula Sanabria finished third with 283. Two tied finishes at the top made this an Open to remember!"
+    },
+    {
+      "run": 4,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez put on a clinic in Compound Bow Men, firing 323 points, the highest total of the tournament, with a jaw-dropping 16 tens and 2 Xs to win by 13 points over Lucas Ferreira (310). The fight for third was razor-thin: Diego Acosta edged Tomás Rivas by a single point, 303 to 302, even though Rivas hit 4 Xs. Compound Bow Women delivered pure drama. Camila Duarte and Valentina Ortiz both finished on 318, and Duarte took the top spot thanks to her 14 tens against Ortiz's 11. Sofía Giménez claimed third with 309 and led the entire field with 6 Xs.\n\nOver in Recurve Bow Men, Nicolás Vera held his nerve to win with 299 points, 5 tens and 2 Xs. Gabriel Ramírez took second on 294 with 6 tens, the most in his category, and Joaquín Martínez rounded out the podium on 289 with 3 Xs. Recurve Bow Women produced a second dead heat at the top, with Lucía Fernández and Isabella Romero both on 297. Fernández claimed first place with 5 tens and 4 Xs to Romero's 4 tens and 3 Xs, and Paula Sanabria finished third with 283.\n\nTwo ties at the summit, a one-point battle for bronze, and a record-setting 16-ten performance made this an Open to remember. Congratulations to all our archers!"
+    },
+    {
+      "run": 5,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez put on a clinic in Compound Bow Men, firing 16 tens and 2 Xs on his way to 323 points, the top score of the tournament and a commanding 13-point cushion over Lucas Ferreira (310). The real drama came further down the line, where Diego Acosta (303) held off Tomás Rivas (302) by a single point, even though Rivas led the group with 4 Xs.\n\nCompound Bow Women delivered a finish for the ages: Camila Duarte and Valentina Ortiz both landed on 318 points! Duarte takes the top spot with 14 tens to Ortiz's 11, while Ortiz answered with 5 Xs. Sofía Giménez wasn't far behind at 309, and her 6 Xs were the most of any archer in the competition.\n\nOn the recurve side, Nicolás Vera claimed Recurve Bow Men with 299 points, five clear of Gabriel Ramírez (294), whose 6 tens topped the group. Joaquín Martínez rounded out the podium at 289 with 3 Xs. Recurve Bow Women brought another dead heat, as Lucía Fernández and Isabella Romero both posted 297. Fernández takes first, holding the edge with 5 tens and 4 Xs to Romero's 4 tens and 3 Xs. Congratulations to every archer on a thrilling day of shooting!"
+    },
+    {
+      "run": 6,
+      "error": null,
+      "issues": [],
+      "recap": "What a day of shooting at the Artemisa Demo Open! Mateo Benítez put on a clinic in Compound Bow Men, topping the field with 323 points and a blistering 16 tens, the most of anyone in the tournament. Lucas Ferreira took second with 310. The fight for third came down to a single point, with Diego Acosta's 303 just holding off Tomás Rivas at 302, even though Rivas drilled 4 Xs.\n\nCompound Bow Women delivered the nail-biter of the day. Camila Duarte and Valentina Ortiz both finished on 318 points, and Duarte's 14 tens to Ortiz's 11 put her at the top of the standings. Sofía Giménez claimed third with 309 and led the category with 6 Xs. Recurve Bow Women was every bit as tight: Lucía Fernández and Isabella Romero each posted 297, and Fernández's 5 tens and 4 Xs edged Romero's 4 tens. Paula Sanabria rounded out the podium with 283.\n\nIn Recurve Bow Men, Nicolás Vera held his nerve to win with 299 points. Gabriel Ramírez finished five points back at 294 with the category-best 6 tens, and Joaquín Martínez took third at 289 with a strong 3 Xs. Congratulations to every archer who stepped up to the line!"
+    },
+    {
+      "run": 7,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez owned the Compound Bow Men's field, firing a monster 323 points with a jaw-dropping 16 tens, the most of anyone in the tournament. Lucas Ferreira took second on 310, while the race for third came down to a single point: Diego Acosta's 303 just held off Tomás Rivas at 302, even though Rivas drilled 4 Xs, more than anyone else in that category.\n\nThe Compound Bow Women's battle was an absolute thriller. Camila Duarte and Valentina Ortiz finished dead level on 318 points, and the standings put Duarte on top, with her 14 tens to Ortiz's 11 telling the story. Ortiz still hit 5 Xs, and Sofía Giménez claimed third on 309 while leading the category with 6 Xs.\n\nRecurve delivered drama too. Nicolás Vera topped the men's field with 299, five clear of Gabriel Ramírez (294), while Joaquín Martínez took third on 289 with a category-best 3 Xs. In the Recurve Bow Women's division, Lucía Fernández and Isabella Romero tied on 297, and Fernández got the top spot with 5 tens and 4 Xs against Romero's 4 tens and 3 Xs. Paula Sanabria rounded out the podium on 283. Two ties at the top and a one-point fight for bronze made for a fantastic Open!"
+    },
+    {
+      "run": 8,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez put on a clinic in Compound Bow Men, firing 323 points with a massive 16 tens, the top score of the tournament, to finish 13 clear of Lucas Ferreira (310). The fight behind them was razor-thin: Diego Acosta took 303 points to Tomás Rivas' 302, just a single point apart, even though Rivas led the category with 4 Xs.\n\nCompound Bow Women delivered the drama of the day. Camila Duarte and Valentina Ortiz finished dead level on 318 points. Duarte tops the standings, backed by 14 tens to Ortiz's 11, while Ortiz answered with 5 Xs. Sofía Giménez was right in the mix at 309 and owned the center of the target with 6 Xs, the most of any archer in the field.\n\nOver in Recurve Bow Men, Nicolás Vera claimed the top spot with 299 points, holding off Gabriel Ramírez (294), who led the category with 6 tens, and Joaquín Martínez (289, 3 Xs). Recurve Bow Women brought another tie at the summit: Lucía Fernández and Isabella Romero both posted 297. Fernández heads the standings with 5 tens and 4 Xs against Romero's 4 tens and 3 Xs. Two photo finishes and some sensational shooting made for a tournament to remember!"
+    },
+    {
+      "run": 9,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez put on a clinic in Compound Bow Men, firing the highest total of the tournament with 323 points and a staggering 16 tens to claim the top spot ahead of Lucas Ferreira (310). The battle for third was razor-thin, with Diego Acosta edging Tomás Rivas by a single point, 303 to 302, even though Rivas found the X four times.\n\nCompound Bow Women delivered the drama of the day. Camila Duarte and Valentina Ortiz finished dead level on 318 points, and Duarte's 14 tens to Ortiz's 11 put her at the top of the standings. Sofía Giménez rounded out a fierce podium with 309 points and the most Xs of the entire event, six of them dead center.\n\nOn the recurve side, Nicolás Vera led the men with 299 points, holding off Gabriel Ramírez (294), who hit the most tens in the division with six, and Joaquín Martínez (289). Recurve Bow Women came down to the wire once more: Lucía Fernández and Isabella Romero both posted 297, with Fernández's five tens and four Xs placing her first. Paula Sanabria took third with 283. Two ties at the top and a one-point fight for bronze made for a thrilling finish!"
+    },
+    {
+      "run": 10,
+      "error": null,
+      "issues": [],
+      "recap": "What a day at the Artemisa Demo Open! Mateo Benítez put on a clinic in Compound Bow Men, topping the field with 323 points, the highest score of the tournament, and a jaw-dropping 16 tens. Lucas Ferreira took second with 310. The battle behind him was razor-thin: Diego Acosta edged Tomás Rivas by a single point, 303 to 302, even though Rivas fired 4 Xs. Over in Compound Bow Women, it doesn't get any closer than this. Camila Duarte and Valentina Ortiz both finished on 318 points, with Duarte listed on top thanks to 14 tens against Ortiz's 11. Sofía Giménez claimed third with 309 and led her category with 6 Xs.\n\nThe drama carried into Recurve Bow Women, where Lucía Fernández and Isabella Romero also finished level at 297 points. Fernández is listed first, holding 5 tens and 4 Xs to Romero's 4 tens and 3 Xs. Paula Sanabria rounded out the podium with 283. In Recurve Bow Men, Nicolás Vera took the top spot with 299. Gabriel Ramírez followed five points back at 294 and hit the most tens in the category with 6, while Joaquín Martínez placed third on 289 with a category-best 3 Xs.\n\nTwo dead-heat finishes at the top, a one-point scrap for bronze, and a dominant performance from Benítez made this an Open to remember. Congratulations to all the archers!"
+    }
+  ],
+  "rescored_at": "2026-11-20T01:30:19+00:00"
+}

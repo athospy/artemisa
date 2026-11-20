@@ -1,5 +1,7 @@
 # Artemisa - Archery Tournament Scoring System
 
+[![Tests](https://github.com/athospy/artemisa/actions/workflows/test.yml/badge.svg)](https://github.com/athospy/artemisa/actions/workflows/test.yml)
+
 Artemisa is a sophisticated and user-friendly scoring system designed specifically for archery tournaments. This project was born out of a necessity to streamline and modernize the way archery competitions are managed, scored, and displayed. Traditional methods of scoring and timekeeping in archery can be cumbersome, error-prone, and lacking in real-time visibility. Artemisa addresses these challenges by offering an integrated solution that not only simplifies the process but also enhances the experience for archers, judges, and spectators alike.
 
 ## Project Overview
@@ -319,6 +321,31 @@ git add .
 git commit -m "Home redesign, favicon, results fix, timer stages, score restore"
 git push origin main
 ```
+
+## How the AI match recap stays grounded
+
+The recap is written by Claude from the competition's final standings, and the prompt
+says to use only those facts. `artemisa/grounding.py` checks that deterministically:
+every number in a recap must be a score, a 10s/Xs count, a category size or a gap between
+two archers in the same category, and every two-word name must belong to an archer,
+category or the competition. A failing recap is logged at live events and refused for
+the public demo (`seed_demo --refresh-recap`).
+
+To measure it on real generations (each run is a paid API call):
+
+```bash
+python manage.py eval_recap --runs 10 --out evals/recap_grounding.json
+```
+
+**Latest result (2026-11-19, `claude-opus-5-5`, demo tournament): 10/10 recaps grounded.**
+The first scoring was 9/10. The one failure was a bug in the checker, not the model: a
+possessive name ("Tomás Rivas' 302") wasn't recognised. After fixing it, the saved recaps
+were scored again without new API calls (`eval_recap --rescore`). Superlative claims the
+checker can't verify ("most Xs in the competition") were checked by hand in all 10 and
+were correct. Every recap is in [`evals/recap_grounding.json`](evals/recap_grounding.json).
+
+Recaps are saved with the exact standings they were written from and reused until the
+scores change, so visitors never trigger an API call.
 
 ## Use it from Claude (MCP server)
 
