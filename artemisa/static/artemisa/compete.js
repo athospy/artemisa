@@ -208,23 +208,27 @@ function load_saved_scores(archer_id) {
         if (grouped[1]) {
             fill_saved_end(archer_id, 1, grouped[1]);
         }
-        // Add and fill other ends
-        Object.keys(grouped).forEach(k => {
-            const endNum = parseInt(k, 10);
-            if (endNum === 1) return;
-            add_score_div_then_fill(archer_id, endNum, grouped[endNum]);
+        // Add and fill the other ends one after another, in end order. Requesting them
+        // all at once inserted each end when its response arrived, so ends (and their
+        // running totals) could appear out of order after a reload.
+        const ends = Object.keys(grouped).map(Number).filter(e => e !== 1).sort((a, b) => a - b);
+        let chain = Promise.resolve();
+        ends.forEach(endNum => {
+            chain = chain.then(() => add_score_div_then_fill(archer_id, endNum, grouped[endNum]));
         });
 
-        // Add next empty end to continue
-        if (maxEnd < 12) {
-            add_score_div(archer_id, maxEnd + 1);
-        }
+        // Then add the next empty end to continue scoring
+        chain.then(() => {
+            if (maxEnd < 12) {
+                add_score_div(archer_id, maxEnd + 1);
+            }
+        });
     })
     .catch(err => console.log(err));
 }
 
 function add_score_div_then_fill(archer_id, end_number, scoresArray) {
-    fetch(`/add_score_div`, {
+    return fetch(`/add_score_div`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
