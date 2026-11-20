@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 import json
 from collections import defaultdict
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import IntegrityError
 from django.http import JsonResponse, Http404
